@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwappyFutbol</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Nunito',sans-serif}
+:root{--gd:#0F6E56;--gm:#1D9E75;--gl:#E1F5EE;--aa:#EF9F27;--am:#BA7517;--al:#FAEEDA;--coral:#D85A30;--bg:#f5f5f5;--white:#ffffff;--gray:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;align-items:flex-start}
+.app{width:100%;max-width:420px;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
+.screen{display:none;flex-direction:column;flex:1;min-height:100vh}.screen.active{display:flex}
+.topbar{background:var(--gd);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;overflow:hidden}
+.topbar-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.15}
+.topbar-flags img{width:100%;height:100%;object-fit:cover}
+.topbar>*{position:relative;z-index:2}
+.topbar .logo{font-size:18px;font-weight:800;color:#fff;flex:1}.topbar .logo span{color:var(--aa)}
+.topbar .tb-back{color:rgba(255,255,255,0.85);font-size:22px;cursor:pointer;background:none;border:none}
+.topbar .tb-title{font-size:15px;font-weight:700;color:#fff;flex:1}
+.hero{position:relative;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 20px;overflow:hidden;flex-shrink:0}
+.flag-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(5,1fr);pointer-events:none}
+.flag-cell{overflow:hidden}.flag-cell img{width:100%;height:100%;object-fit:cover;opacity:0.4}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,110,86,0.80) 0%,rgba(15,110,86,0.94) 100%)}
+.hero-content{position:relative;z-index:2}
+.hero-icon{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px}
+.hero-logo{font-size:26px;font-weight:900;color:#fff}.hero-logo span{color:var(--aa)}
+.hero-sub{font-size:13px;color:rgba(255,255,255,0.82);margin-top:8px;line-height:1.5;font-weight:600}
+.strip-wrap{overflow:hidden;background:#f9f9f9;border-top:1px solid var(--border);height:32px;display:flex;align-items:center}
+.strip-inner{display:flex;gap:4px;padding:0 4px;animation:slide 22s linear infinite;white-space:nowrap;align-items:center}
+.strip-inner img{width:38px;height:24px;object-fit:cover;border-radius:2px;border:1px solid var(--border);flex-shrink:0}
+@keyframes slide{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.form-body{padding:20px 18px;display:flex;flex-direction:column;gap:14px;background:var(--white);flex:1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;background:var(--white);color:#111;font-family:'Nunito',sans-serif}
+.field textarea{resize:none;min-height:80px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.iw{position:relative}.iw .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;background:none;border:none;font-size:18px}
+.iw input{padding-right:40px}
+.str-bar{display:flex;gap:4px;margin-top:4px}.str-seg{height:3px;flex:1;border-radius:2px;background:var(--border);transition:background .2s}
+.str-lbl{font-size:11px;color:var(--gray);margin-top:3px;font-weight:600}
+.divider{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--gray);font-weight:600}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-primary{width:100%;padding:13px;background:var(--gd);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:transform .1s,opacity .1s}
+.btn-primary:active{transform:scale(0.97);opacity:0.9}
+.btn-secondary{width:100%;padding:11px;background:var(--white);color:var(--gd);border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.btn-danger{width:100%;padding:11px;background:#fef2f2;color:var(--coral);border:1.5px solid #fecaca;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.btn-link{background:none;border:none;color:var(--gd);font-size:13px;cursor:pointer;font-weight:700;text-decoration:underline;font-family:'Nunito',sans-serif}
+.terms{font-size:11px;color:var(--gray);text-align:center;line-height:1.6;font-weight:600}.terms span{color:var(--gd);font-weight:700}
+.msg-error{background:#fef2f2;color:#dc2626;padding:10px 14px;border-radius:12px;font-size:13px;border:1px solid #fecaca;display:none;font-weight:600}
+.msg-success{background:#f0fdf4;color:#16a34a;padding:10px 14px;border-radius:12px;font-size:13px;border:1px solid #bbf7d0;display:none;font-weight:600}
+.search-bar{background:var(--gm);padding:10px 16px 14px;flex-shrink:0;position:relative;overflow:hidden}
+.search-bar-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.12}
+.search-bar-flags img{width:100%;height:100%;object-fit:cover}
+.search-bar>*{position:relative;z-index:2}
+.sw{position:relative}.sw .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--gray);font-size:18px}
+.sw input{width:100%;padding:9px 13px 9px 36px;border-radius:12px;border:none;font-size:14px;background:rgba(255,255,255,0.96);color:#111;font-family:'Nunito',sans-serif;font-weight:600}
+.filter-row{display:flex;gap:6px;padding:10px 0 0;overflow-x:auto}
+.filter-pill{flex-shrink:0;padding:5px 13px;border-radius:20px;border:1px solid rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.12);white-space:nowrap;font-family:'Nunito',sans-serif}
+.filter-pill.active{background:#fff;color:var(--gd)}
+.radio-row{display:flex;align-items:center;gap:8px;padding:8px 0 0}
+.radio-lbl{font-size:11px;color:rgba(255,255,255,0.85);font-weight:700;white-space:nowrap}
+.radio-select{padding:4px 8px;border-radius:8px;border:none;font-size:12px;font-weight:700;background:rgba(255,255,255,0.95);color:var(--gd);cursor:pointer;font-family:'Nunito',sans-serif}
+.sec-lbl{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;padding:14px 16px 6px}
+.scroll{overflow-y:auto;flex:1}
+.sticker-card{margin:0 16px 10px;background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .1s}
+.sticker-card:active{transform:scale(0.98)}
+.st-thumb{width:44px;height:56px;border-radius:10px;background:var(--gm);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.st-num{font-size:9px;font-weight:800;color:rgba(255,255,255,0.8)}.st-flag{font-size:20px}
+.st-info{flex:1;min-width:0}.st-name{font-size:14px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-team{font-size:11px;color:var(--gray);margin-top:2px;font-weight:600}.st-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:11px;padding:3px 8px;border-radius:8px;font-weight:700}
+.tag-swap{background:var(--gl);color:var(--gd)}.tag-sale{background:var(--al);color:var(--am)}
+.tag-want{background:#EEF2FF;color:#4F46E5}
+.tag-qty{background:#f3f4f6;color:var(--gray);border:1px solid var(--border)}
+.dist-pill{font-size:11px;font-weight:800;color:var(--gd);background:var(--gl);padding:3px 8px;border-radius:8px}
+.user-mini{font-size:11px;color:var(--gray);margin-top:4px;text-align:right;font-weight:600}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-weight:600;line-height:1.6}
+.map-box{margin:0 16px 12px;border-radius:16px;border:1.5px solid var(--border);height:200px;background:#f0f4f0;position:relative;overflow:hidden}
+#mapa-real{width:100%;height:100%;border-radius:16px}
+.leaflet-container{border-radius:16px}
+.map-btn{position:absolute;z-index:999;background:var(--gd);color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);font-family:'Nunito',sans-serif}
+.type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.type-btn{padding:10px 6px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:12px;font-weight:700;color:#111;font-family:'Nunito',sans-serif;transition:all .15s}
+.type-btn.active-cambio{border-color:var(--gd);color:var(--gd);background:var(--gl)}
+.type-btn.active-venta{border-color:var(--am);color:var(--am);background:var(--al)}
+.type-btn.active-busco{border-color:#4F46E5;color:#4F46E5;background:#EEF2FF}
+.preview-card{background:#f9fafb;border-radius:14px;border:1.5px solid var(--border);padding:12px;display:flex;align-items:center;gap:12px}
+.qty-wrap{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.qty-btn{width:40px;height:40px;border:none;background:#f3f4f6;color:#111;font-size:20px;cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif}
+.qty-val{flex:1;text-align:center;font-size:16px;font-weight:800;color:#111;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 0;background:var(--white)}
+.album-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.album-pill{flex-shrink:0;padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:700;cursor:pointer;color:var(--gray);background:var(--white);white-space:nowrap;font-family:'Nunito',sans-serif}
+.album-pill.active{background:var(--gd);color:#fff;border-color:var(--gd)}
+.fee-notice{background:#EEF2FF;border:1.5px solid #C7D2FE;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.fee-notice .fi{font-size:20px;flex-shrink:0}
+.fee-notice .ft{font-size:12px;color:#4F46E5;font-weight:700;line-height:1.5}
+.profile-hero{background:var(--gd);padding:20px 16px 0;flex-shrink:0;position:relative;overflow:hidden}
+.profile-hero-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.15}
+.profile-hero-flags img{width:100%;height:100%;object-fit:cover}
+.profile-hero>*{position:relative;z-index:2}
+.ph-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.avatar{width:66px;height:66px;border-radius:50%;background:var(--aa);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--am);border:3px solid rgba(255,255,255,0.3);overflow:hidden;cursor:pointer;position:relative}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%;font-size:18px}
+.avatar:hover .avatar-overlay{opacity:1}
+#inp-foto{display:none}
+.btn-edit-sm{padding:7px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.ph-name{font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.mvp-badge{background:var(--aa);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:8px}
+.ph-handle{font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;font-weight:600}
+.ph-loc{font-size:12px;color:rgba(255,255,255,0.7);margin-top:5px;font-weight:600}
+.plan-strip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;margin-top:10px;font-size:11px;color:rgba(255,255,255,0.9);font-weight:700;cursor:pointer}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,255,255,0.15);margin-top:14px}
+.stat-box{padding:12px 4px;text-align:center;border-right:1px solid rgba(255,255,255,0.15)}.stat-box:last-child{border-right:none}
+.stat-n{font-size:20px;font-weight:800;color:#fff}.stat-l{font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px;font-weight:600}
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:12px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--gray);cursor:pointer;border-bottom:2.5px solid transparent;font-family:'Nunito',sans-serif}
+.tab.active{color:var(--gd);border-bottom-color:var(--gd)}.tc{display:none}.tc.active{display:block}
+.sticker-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.sm-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.sm-card .btn-del{position:absolute;top:5px;right:5px;background:var(--coral);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sm-th{width:38px;height:48px;border-radius:8px;background:var(--gm);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sm-n{font-size:9px;color:rgba(255,255,255,0.8);font-weight:800}.sm-f{font-size:17px}
+.sm-nm{font-size:12px;font-weight:700;color:#111;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add-c{border:2px dashed var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;min-height:110px}
+.add-c span{font-size:11px;color:var(--gray);text-align:center;font-weight:600}
+.set-list{padding:12px;display:flex;flex-direction:column;gap:7px}
+.set-item{display:flex;align-items:center;gap:12px;padding:13px;background:#f9fafb;border-radius:14px;border:1.5px solid var(--border);cursor:pointer;transition:transform .1s}
+.set-item:active{transform:scale(0.98)}
+.set-icon{font-size:20px}.set-lbl{flex:1;font-size:13px;color:#111;font-weight:700}.set-arr{font-size:16px;color:var(--gray)}
+.set-item.danger .set-lbl{color:var(--coral)}
+.chat-header{background:var(--gd);padding:13px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:relative;overflow:hidden}
+.chat-header-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.15}
+.chat-header-flags img{width:100%;height:100%;object-fit:cover}
+.chat-header>*{position:relative;z-index:2}
+.c-av{width:36px;height:36px;border-radius:50%;background:var(--aa);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--am)}
+.c-info{flex:1}.c-name{font-size:14px;font-weight:700;color:#fff}.c-sub{font-size:11px;color:rgba(255,255,255,0.7);font-weight:600}
+.conv-list{padding:12px;display:flex;flex-direction:column;gap:8px}
+.conv-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--white);border:1.5px solid var(--border);border-radius:16px;cursor:pointer;transition:transform .1s}
+.conv-item:active{transform:scale(0.98)}
+.conv-av{width:44px;height:44px;border-radius:50%;background:var(--gm);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
+.conv-info{flex:1;min-width:0}.conv-name{font-size:14px;font-weight:700;color:#111}
+.conv-last{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.conv-time{font-size:11px;color:var(--gray);flex-shrink:0;font-weight:600}
+.conv-unread{width:20px;height:20px;border-radius:50%;background:var(--gd);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bubbles{padding:14px;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:78%;padding:9px 13px;border-radius:16px;font-size:13px;line-height:1.5;font-weight:600}
+.bin{background:#E8F4FD;color:#111;border:1.5px solid #B3D9F5;border-bottom-left-radius:3px;align-self:flex-start}
+.bout{background:var(--gd);color:#fff;border-bottom-right-radius:3px;align-self:flex-end}
+.btime{font-size:10px;color:rgba(255,255,255,0.6);margin-top:3px;text-align:right}
+.btime-in{font-size:10px;color:var(--gray);margin-top:3px}
+.chat-inp{display:flex;align-items:center;gap:8px;padding:10px 14px 14px;border-top:1px solid var(--border);background:var(--white);flex-shrink:0}
+.chat-inp input{flex:1;border-radius:20px;padding:9px 14px;font-size:13px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-weight:600}
+.chat-send{width:36px;height:36px;border-radius:50%;background:var(--gd);border:none;cursor:pointer;color:#fff;font-size:18px}
+.chat-actions{padding:8px 14px;display:flex;gap:8px;background:var(--white);border-top:1px solid var(--border);flex-shrink:0}
+.chat-action-btn{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);background:#f9fafb;font-size:11px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;text-align:center}
+.chat-action-btn.completar{border-color:var(--gd);background:var(--gl);color:var(--gd)}
+.plan-hero{background:var(--gd);padding:20px 16px 22px;text-align:center;flex-shrink:0;position:relative;overflow:hidden}
+.plan-hero-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.15}
+.plan-hero-flags img{width:100%;height:100%;object-fit:cover}
+.plan-hero>*{position:relative;z-index:2}
+.crown-wrap{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px}
+.plan-cards-wrap{padding:14px;display:flex;flex-direction:column;gap:10px}
+.plan-card{border:1.5px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .1s}
+.plan-card:active{transform:scale(0.98)}
+.plan-card.sel{border:2.5px solid var(--gd)}.plan-card.sel .ph2{background:var(--gd)}
+.plan-card.sel .pn,.plan-card.sel .pp{color:#fff}.plan-card.sel .pperiod{color:rgba(255,255,255,0.75)}
+.ph2{background:#f9fafb;padding:13px 14px;display:flex;align-items:center;gap:10px}
+.p-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.p-radio-dot{width:8px;height:8px;border-radius:50%;background:#fff;display:none}
+.plan-card.sel .p-radio-dot{display:block}.plan-card.sel .p-radio{border-color:rgba(255,255,255,0.5)}
+.pn{font-size:14px;font-weight:800;color:#111;flex:1}
+.pbadge{font-size:10px;font-weight:800;background:var(--al);color:var(--am);padding:2px 8px;border-radius:8px;margin-left:6px}
+.plan-card.sel .pbadge{background:rgba(255,255,255,0.2);color:#fff}
+.pp{font-size:20px;font-weight:800;color:#111}.pperiod{font-size:11px;color:var(--gray);font-weight:600}
+.pf{padding:10px 14px;display:flex;flex-direction:column;gap:6px;background:var(--white);border-top:1px solid var(--border)}
+.fr{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#111;font-weight:600;line-height:1.4}.fr.off{color:var(--gray)}
+.cta-section{padding:14px;background:var(--white);border-top:1px solid var(--border)}
+.guarantee{display:flex;align-items:center;gap:6px;justify-content:center;font-size:11px;color:var(--gray);margin-top:8px;font-weight:600}
+.nav-bar{display:flex;background:var(--white);border-top:1px solid var(--border);padding:8px 0 12px;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--gray);font-size:10px;font-weight:700;border:none;background:none;font-family:'Nunito',sans-serif;transition:transform .1s}
+.nav-item:active{transform:scale(0.9)}
+.nav-item .ni{font-size:26px;line-height:1}.nav-item.active{color:var(--gd)}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--gray);font-weight:600}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--coral);position:absolute;top:0;right:0}
+.nav-icon-wrap{position:relative;display:inline-block}
+.album-hero{background:var(--gd);padding:16px;position:relative;overflow:hidden;flex-shrink:0}
+.album-hero-flags{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr);pointer-events:none;opacity:0.15}
+.album-hero-flags img{width:100%;height:100%;object-fit:cover}
+.album-hero>*{position:relative;z-index:2}
+.album-hero-title{font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.album-hero-sub{font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:12px;font-weight:600}
+.sel-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:160px;overflow-y:auto;padding:2px}
+.sel-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent;transition:all .15s;background:rgba(255,255,255,0.08)}
+.sel-btn.active{border-color:var(--aa);background:rgba(255,255,255,0.2)}
+.sel-btn img{width:32px;height:20px;object-fit:cover;border-radius:3px;border:1px solid rgba(255,255,255,0.3)}
+.sel-btn span{font-size:9px;color:rgba(255,255,255,0.85);font-weight:700;text-align:center;line-height:1.2}
+.album-body{padding:14px;flex:1;overflow-y:auto}
+.album-section-title{font-size:13px;font-weight:800;color:#111;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.album-section-sub{font-size:11px;color:var(--gray);margin-bottom:12px;font-weight:600}
+.album-tipo-row{display:flex;gap:8px;margin-bottom:12px}
+.album-tipo-btn{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;color:var(--gray);text-align:center;font-family:'Nunito',sans-serif}
+.album-tipo-btn.active-cambio{border-color:var(--gd);background:var(--gl);color:var(--gd)}
+.album-tipo-btn.active-venta{border-color:var(--am);background:var(--al);color:var(--am)}
+.stickers-wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
+.sticker-circle{width:100%;aspect-ratio:1;border-radius:12px;border:1.5px solid var(--border);background:#f9fafb;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:4px}
+.sticker-circle:active{transform:scale(0.93)}
+.sticker-circle.sel-cambio{background:var(--gl);border-color:var(--gd)}
+.sticker-circle.sel-venta{background:var(--al);border-color:var(--am)}
+.sc-num{font-size:10px;font-weight:800;color:var(--gray)}
+.sticker-circle.sel-cambio .sc-num{color:var(--gd)}
+.sticker-circle.sel-venta .sc-num{color:var(--am)}
+.sc-name{font-size:8px;color:var(--gray);text-align:center;line-height:1.2;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
+.sticker-circle.sel-cambio .sc-name{color:var(--gd)}
+.sticker-circle.sel-venta .sc-name{color:var(--am)}
+.sc-tipo{font-size:10px;margin-top:1px}
+.album-counter{text-align:center;font-size:13px;color:var(--gray);padding:8px 0;font-weight:700}
+.album-counter span{font-weight:800;color:var(--gd)}
+.album-actions{display:flex;flex-direction:column;gap:8px;padding:0 0 20px}
+.info-card{background:#f9fafb;border-radius:16px;border:1.5px solid var(--border);padding:16px;margin-bottom:12px}
+.info-card-title{font-size:14px;font-weight:800;color:#111;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.info-card-text{font-size:13px;color:var(--gray);line-height:1.6;font-weight:600}
+.rating-screen{padding:20px;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center}
+.rating-title{font-size:18px;font-weight:800;color:#111}
+.rating-sub{font-size:13px;color:var(--gray);font-weight:600;line-height:1.5}
+.rating-btns{display:flex;gap:16px;justify-content:center;margin-top:8px}
+.rating-btn{width:100px;height:100px;border-radius:20px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:800;font-family:'Nunito',sans-serif;transition:transform .15s}
+.rating-btn:active{transform:scale(0.93)}
+.rating-pos{background:#f0fdf4;color:#16a34a;border:2px solid #bbf7d0}
+.rating-neg{background:#fef2f2;color:#dc2626;border:2px solid #fecaca}
+.rating-emoji{font-size:40px}
+.notif-card{background:linear-gradient(135deg,var(--gd),var(--gm));border-radius:16px;padding:20px;color:#fff;margin-bottom:12px}
+.notif-card-title{font-size:16px;font-weight:800;margin-bottom:8px}
+.notif-card-text{font-size:13px;opacity:0.9;line-height:1.6;font-weight:600}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.2)}
+.notif-item:last-child{border-bottom:none}
+.notif-item .ni2{font-size:20px;flex-shrink:0}
+.notif-item .nt{font-size:12px;opacity:0.9;font-weight:600;line-height:1.4}
+</style>
+</head><body>
+<div class="app">
+
+<div class="screen active" id="s-welcome">
+  <div class="hero">
+    <div class="flag-grid" id="flagGrid"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-icon">⚽</div>
+      <div class="hero-logo">Swappy<span>Futbol</span></div>
+      <div class="hero-sub">Intercambia barajitas con coleccionistas<br>de todo el mundo</div>
+    </div>
+  </div>
+  <div class="strip-wrap"><div class="strip-inner" id="stripInner"></div></div>
+  <div class="form-body">
+    <div id="msg-welcome-error" class="msg-error"></div>
+    <div id="msg-welcome-ok" class="msg-success"></div>
+    <div class="field"><label>Nombre completo</label><input type="text" id="inp-nombre" placeholder="Tu nombre completo" /></div>
+    <div class="field"><label>Correo electrónico</label><input type="email" id="inp-email" placeholder="tu@email.com" /></div>
+    <div class="field"><label>Contraseña</label>
+      <div class="iw"><input type="password" id="inp-pass" placeholder="Mínimo 6 caracteres" oninput="chkStr(this.value)" /><button class="eye" onclick="vibrar();togPass()">👁</button></div>
+      <div class="str-bar"><div class="str-seg" id="sg0"></div><div class="str-seg" id="sg1"></div><div class="str-seg" id="sg2"></div><div class="str-seg" id="sg3"></div></div>
+      <div class="str-lbl" id="strlbl">Escribe tu contraseña</div>
+    </div>
+    <button class="btn-primary" onclick="vibrar();registrar()">Crear mi cuenta</button>
+    <div class="divider">¿ya tienes cuenta?</div>
+    <button class="btn-secondary" onclick="vibrar();iniciarSesion()">Iniciar sesión</button>
+    <p class="terms">Al registrarte aceptas los <span>Términos de uso</span> y la <span>Política de privacidad</span></p>
+  </div>
+</div>
+
+<div class="screen" id="s-home">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbf1"></div>
+    <div class="logo">Swappy<span>Futbol</span></div>
+    <div class="nav-icon-wrap" onclick="vibrar();go('s-mensajes')" style="cursor:pointer">
+      <span style="color:rgba(255,255,255,0.85);font-size:24px"><i class="ti ti-messages"></i></span>
+      <div class="notif-dot" id="notif-home" style="display:none"></div>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-bar-flags" id="sbf"></div>
+    <div class="sw"><span class="si">🔍</span><input type="text" id="search-inp" placeholder="Busca jugador, número o país..." oninput="filtrarTodo(this.value)" /></div>
+    <div class="filter-row">
+      <div class="filter-pill active" onclick="vibrar();selFilter(this,'todos')">Todos</div>
+      <div class="filter-pill" onclick="vibrar();selFilter(this,'cambio')">🔄 Cambios</div>
+      <div class="filter-pill" onclick="vibrar();selFilter(this,'venta')">🏷 Ventas</div>
+      <div class="filter-pill" onclick="vibrar();go('s-comprar')">💰 Comprar</div>
+    </div>
+    <div class="radio-row">
+      <span class="radio-lbl">📡 Radio:</span>
+      <select class="radio-select" id="radio-km" onchange="vibrar();cambiarRadio()">
+        <option value="2">2 km</option>
+        <option value="5" selected>5 km</option>
+        <option value="10">10 km</option>
+        <option value="25">25 km</option>
+        <option value="50">50 km</option>
+        <option value="100">100 km</option>
+      </select>
+    </div>
+  </div>
+  <div class="scroll">
+    <div class="sec-lbl">📍 Coleccionistas cerca</div>
+    <div class="map-box">
+      <div id="mapa-real"></div>
+      <button onclick="vibrar();pedirUbicacion()" class="map-btn" style="bottom:8px;right:8px"><i class="ti ti-map-pin"></i> Mi ubicación</button>
+    </div>
+    <div class="sec-lbl" id="resultados-lbl">Barajitas disponibles</div>
+    <div id="lista-barajitas"><div class="loading">Cargando...</div></div>
+    <div style="padding-bottom:14px"></div>
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-item active" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item" onclick="vibrar();go('s-mensajes')"><span class="nav-icon-wrap"><i class="ti ti-messages ni"></i><div class="notif-dot" id="notif-nav" style="display:none"></div></span>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-album">
+  <div class="album-hero">
+    <div class="album-hero-flags" id="ahf"></div>
+    <div class="album-hero-title">⚡ Álbum Rápido — Mundial 2026</div>
+    <div class="album-hero-sub">Selecciona tu país y toca las barajitas repetidas</div>
+    <div class="sel-grid" id="sel-grid"></div>
+  </div>
+  <div class="album-body" id="album-body">
+    <div class="empty-state"><div class="es-icon">🌍</div><p>Selecciona una selección arriba<br>para ver sus barajitas</p></div>
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item active" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item" onclick="vibrar();go('s-mensajes')"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-add">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbf2"></div>
+    <button class="tb-back" onclick="vibrar();go('s-home')">←</button>
+    <div class="tb-title">Agregar barajita</div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div id="msg-add-error" class="msg-error"></div>
+    <div id="msg-add-ok" class="msg-success"></div>
+    <div class="field"><label>¿Qué quieres hacer?</label>
+      <div class="type-grid">
+        <div class="type-btn active-cambio" id="t-cambio" onclick="vibrar();selTipo('cambio')"><span style="font-size:20px">🔄</span>Cambiar</div>
+        <div class="type-btn" id="t-venta" onclick="vibrar();selTipo('venta')"><span style="font-size:20px">🏷</span>Vender</div>
+        <div class="type-btn" id="t-busco" onclick="vibrar();selTipo('busco')"><span style="font-size:20px">🔍</span>Busco</div>
+      </div>
+    </div>
+    <div id="fee-box" style="display:none">
+      <div class="fee-notice">
+        <div class="fi">💡</div>
+        <div class="ft">Publicar en venta o búsqueda tiene un costo de <strong>$0.50</strong> por barajita. Los intercambios siempre son gratis. Este pequeño fee nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+      </div>
+    </div>
+    <div class="field"><label>Álbum</label>
+      <div class="album-pills">
+        <div class="album-pill active" onclick="vibrar();selAlbum(this)">Mundial 2026</div>
+        <div class="album-pill" onclick="vibrar();selAlbum(this)">Champions 2025</div>
+        <div class="album-pill" onclick="vibrar();selAlbum(this)">LaLiga 2025</div>
+        <div class="album-pill" onclick="vibrar();selAlbum(this)">Otro</div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Nº de barajita</label><input type="number" id="a-num" placeholder="Ej: 17 (Messi)" oninput="updPrev()" /></div>
+      <div class="field"><label>País del equipo</label>
+        <select id="a-pais" onchange="updPrev()">
+          <option value="">Selecciona país</option>
+          <option value="🇩🇿 Argelia">🇩🇿 Argelia</option>
+          <option value="🇦🇷 Argentina">🇦🇷 Argentina</option>
+          <option value="🇦🇺 Australia">🇦🇺 Australia</option>
+          <option value="🇦🇹 Austria">🇦🇹 Austria</option>
+          <option value="🇧🇪 Bélgica">🇧🇪 Bélgica</option>
+          <option value="🇧🇦 Bosnia">🇧🇦 Bosnia</option>
+          <option value="🇧🇷 Brasil">🇧🇷 Brasil</option>
+          <option value="🇨🇦 Canadá">🇨🇦 Canadá</option>
+          <option value="🇨🇻 Cabo Verde">🇨🇻 Cabo Verde</option>
+          <option value="🇨🇩 Congo DR">🇨🇩 Congo DR</option>
+          <option value="🇨🇴 Colombia">🇨🇴 Colombia</option>
+          <option value="🇭🇷 Croacia">🇭🇷 Croacia</option>
+          <option value="🇨🇼 Curazao">🇨🇼 Curazao</option>
+          <option value="🇨🇿 Rep. Checa">🇨🇿 Rep. Checa</option>
+          <option value="🇪🇨 Ecuador">🇪🇨 Ecuador</option>
+          <option value="🇪🇬 Egipto">🇪🇬 Egipto</option>
+          <option value="🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra</option>
+          <option value="🇪🇸 España">🇪🇸 España</option>
+          <option value="🇫🇷 Francia">🇫🇷 Francia</option>
+          <option value="🇩🇪 Alemania">🇩🇪 Alemania</option>
+          <option value="🇬🇭 Ghana">🇬🇭 Ghana</option>
+          <option value="🇭🇹 Haití">🇭🇹 Haití</option>
+          <option value="🇮🇷 Irán">🇮🇷 Irán</option>
+          <option value="🇮🇶 Irak">🇮🇶 Irak</option>
+          <option value="🇯🇴 Jordania">🇯🇴 Jordania</option>
+          <option value="🇯🇵 Japón">🇯🇵 Japón</option>
+          <option value="🇰🇷 Corea del Sur">🇰🇷 Corea del Sur</option>
+          <option value="🇸🇦 Arabia Saudita">🇸🇦 Arabia Saudita</option>
+          <option value="🇲🇦 Marruecos">🇲🇦 Marruecos</option>
+          <option value="🇲🇽 México">🇲🇽 México</option>
+          <option value="🇳🇱 Países Bajos">🇳🇱 Países Bajos</option>
+          <option value="🇳🇴 Noruega">🇳🇴 Noruega</option>
+          <option value="🇳🇿 Nueva Zelanda">🇳🇿 Nueva Zelanda</option>
+          <option value="🇵🇦 Panamá">🇵🇦 Panamá</option>
+          <option value="🇵🇾 Paraguay">🇵🇾 Paraguay</option>
+          <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
+          <option value="🇶🇦 Qatar">🇶🇦 Qatar</option>
+          <option value="🇿🇦 Sudáfrica">🇿🇦 Sudáfrica</option>
+          <option value="🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia</option>
+          <option value="🇸🇳 Senegal">🇸🇳 Senegal</option>
+          <option value="🇨🇭 Suiza">🇨🇭 Suiza</option>
+          <option value="🇸🇪 Suecia">🇸🇪 Suecia</option>
+          <option value="🇹🇳 Túnez">🇹🇳 Túnez</option>
+          <option value="🇹🇷 Turquía">🇹🇷 Turquía</option>
+          <option value="🇺🇾 Uruguay">🇺🇾 Uruguay</option>
+          <option value="🇺🇸 Estados Unidos">🇺🇸 Estados Unidos</option>
+          <option value="🇺🇿 Uzbekistán">🇺🇿 Uzbekistán</option>
+          <option value="🇨🇮 Costa Marfil">🇨🇮 Costa Marfil</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Jugador</label><input type="text" id="a-jugador" placeholder="Ej: Lionel Messi" oninput="updPrev()" /></div>
+    <div class="field" id="precio-field" style="display:none"><label id="precio-label">Precio ($)</label><input type="number" id="a-precio" placeholder="0.00" step="0.50" min="0" /></div>
+    <div class="field" id="oferta-field" style="display:none"><label>Mi oferta ($)</label><input type="number" id="a-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" /></div>
+    <div class="field" id="qty-field"><label>Cantidad</label>
+      <div class="qty-wrap">
+        <button class="qty-btn" onclick="vibrar();chgQty(-1)">−</button>
+        <div class="qty-val" id="qty-val">1</div>
+        <button class="qty-btn" onclick="vibrar();chgQty(1)">+</button>
+      </div>
+    </div>
+    <div class="field"><label>Vista previa</label>
+      <div class="preview-card">
+        <div class="st-thumb"><div class="st-num" id="pv-num">#---</div><div class="st-flag" id="pv-flag">?</div></div>
+        <div><div style="font-size:14px;font-weight:700;color:#111" id="pv-jug">Nombre del jugador</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:2px;font-weight:600" id="pv-team">País · Álbum</div>
+        <span class="tag tag-swap" id="pv-tag" style="margin-top:6px;display:inline-block">Para cambiar</span></div>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-publicar" onclick="vibrar();publicarBarajita()">✅ Publicar barajita</button>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item" onclick="vibrar();go('s-mensajes')"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-mensajes">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbf3"></div>
+    <div class="logo">Swappy<span>Futbol</span></div>
+    <div style="color:rgba(255,255,255,0.7);font-size:13px;font-weight:700">Mensajes</div>
+  </div>
+  <div class="scroll"><div class="conv-list" id="conv-list"><div class="loading">Cargando...</div></div></div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item active"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-chat">
+  <div class="chat-header">
+    <div class="chat-header-flags" id="tbf4"></div>
+    <button style="color:rgba(255,255,255,0.85);background:none;border:none;font-size:22px;cursor:pointer;position:relative;z-index:2" onclick="vibrar();go('s-mensajes')">←</button>
+    <div class="c-av" id="chat-av">?</div>
+    <div class="c-info"><div class="c-name" id="chat-nombre">Usuario</div><div class="c-sub" id="chat-sub">SwappyFutbol</div></div>
+  </div>
+  <div class="scroll" id="chat-scroll"><div class="bubbles" id="bubbles"></div></div>
+  <div class="chat-actions">
+    <button class="chat-action-btn completar" onclick="vibrar();marcarCompletado()">✅ Intercambio completado</button>
+  </div>
+  <div class="chat-inp">
+    <input type="text" id="chat-msg" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter'){vibrar();enviarMsg()}" />
+    <button class="chat-send" onclick="vibrar();enviarMsg()">➤</button>
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item active"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-valorar">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfv"></div>
+    <div class="tb-title">Califica tu experiencia</div>
+  </div>
+  <div class="scroll">
+    <div class="rating-screen">
+      <div style="font-size:60px">🤝</div>
+      <div class="rating-title">¡Intercambio completado!</div>
+      <div class="rating-sub">¿Cómo fue tu experiencia con <strong id="rating-nombre">este usuario</strong>?<br><br>Tu calificación ayuda a otros coleccionistas a saber con quién pueden confiar.</div>
+      <div class="rating-btns">
+        <button class="rating-btn rating-pos" onclick="vibrar();calificar(1)">
+          <div class="rating-emoji">👍</div>
+          <div>Positiva</div>
+        </button>
+        <button class="rating-btn rating-neg" onclick="vibrar();calificar(-1)">
+          <div class="rating-emoji">👎</div>
+          <div>Negativa</div>
+        </button>
+      </div>
+      <button class="btn-link" onclick="vibrar();go('s-mensajes')">Omitir por ahora</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="s-profile">
+  <div class="profile-hero">
+    <div class="profile-hero-flags" id="phf"></div>
+    <div class="ph-top">
+      <div class="avatar" id="profile-av" onclick="vibrar();document.getElementById('inp-foto').click()">
+        <span id="profile-av-txt">?</span>
+        <img id="profile-av-img" src="" style="display:none" alt="foto" />
+        <div class="avatar-overlay">📷</div>
+      </div>
+      <input type="file" id="inp-foto" accept="image/*" onchange="subirFoto(this)" />
+      <button class="btn-edit-sm" onclick="vibrar();go('s-editar')"><i class="ti ti-pencil"></i> Editar</button>
+    </div>
+    <div class="ph-name" id="profile-name">Cargando... <span class="mvp-badge" id="mvp-badge" style="display:none">🏆 MVP</span></div>
+    <div class="ph-handle" id="profile-email"></div>
+    <div class="ph-loc" id="profile-loc">📍 Ubicación</div>
+    <div class="plan-strip" onclick="vibrar();go('s-planes')">👑 Plan Gratis · Actualizar</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-n" id="stat-barajitas">0</div><div class="stat-l">Barajitas</div></div>
+      <div class="stat-box"><div class="stat-n" id="stat-intercambios">0</div><div class="stat-l">Cambios</div></div>
+      <div class="stat-box" onclick="vibrar();go('s-valoraciones')" style="cursor:pointer"><div class="stat-n" id="stat-rating">⭐ 5.0</div><div class="stat-l">Valoración</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="vibrar();swTab(0)">Mis barajitas</div>
+    <div class="tab" onclick="vibrar();swTab(1)">Ajustes</div>
+  </div>
+  <div class="scroll">
+    <div class="tc active" id="ptc0"><div class="sticker-grid" id="mis-barajitas"><div class="loading">Cargando...</div></div></div>
+    <div class="tc" id="ptc1">
+      <div class="set-list">
+        <div class="set-item" onclick="vibrar();go('s-planes')"><span class="set-icon"><i class="ti ti-crown"></i></span><div class="set-lbl">Suscripción y planes</div><span class="set-arr">›</span></div>
+        <div class="set-item" onclick="vibrar();go('s-notificaciones')"><span class="set-icon"><i class="ti ti-bell"></i></span><div class="set-lbl">Notificaciones</div><span class="set-arr">›</span></div>
+        <div class="set-item" onclick="vibrar();go('s-ubicacion')"><span class="set-icon"><i class="ti ti-map-pin"></i></span><div class="set-lbl">Cambiar ubicación</div><span class="set-arr">›</span></div>
+        <div class="set-item" onclick="vibrar();go('s-ayuda')"><span class="set-icon"><i class="ti ti-help-circle"></i></span><div class="set-lbl">Centro de ayuda</div><span class="set-arr">›</span></div>
+        <div class="set-item danger" onclick="vibrar();cerrarSesion()"><span class="set-icon"><i class="ti ti-logout"></i></span><div class="set-lbl">Cerrar sesión</div><span class="set-arr">›</span></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item" onclick="vibrar();go('s-mensajes')"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item active"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+<div class="screen" id="s-editar">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfe"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Editar perfil</div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div id="msg-edit-error" class="msg-error"></div>
+    <div id="msg-edit-ok" class="msg-success"></div>
+    <div class="field"><label>Nombre completo</label><input type="text" id="edit-nombre" placeholder="Tu nombre completo" /></div>
+    <div class="field"><label>Username (@)</label><input type="text" id="edit-username" placeholder="sin espacios, sin @" /></div>
+    <div class="field"><label>Ciudad</label><input type="text" id="edit-ciudad" placeholder="Ej: Caracas, Bogotá..." /></div>
+    <div class="field"><label>País</label>
+      <select id="edit-pais">
+        <option value="">Selecciona tu país</option>
+        <option value="Venezuela">🇻🇪 Venezuela</option>
+        <option value="Colombia">🇨🇴 Colombia</option>
+        <option value="Argentina">🇦🇷 Argentina</option>
+        <option value="México">🇲🇽 México</option>
+        <option value="Brasil">🇧🇷 Brasil</option>
+        <option value="España">🇪🇸 España</option>
+        <option value="Ecuador">🇪🇨 Ecuador</option>
+        <option value="Perú">🇵🇪 Perú</option>
+        <option value="Chile">🇨🇱 Chile</option>
+        <option value="Uruguay">🇺🇾 Uruguay</option>
+        <option value="Paraguay">🇵🇾 Paraguay</option>
+        <option value="Bolivia">🇧🇴 Bolivia</option>
+        <option value="Panama">🇵🇦 Panamá</option>
+        <option value="Costa Rica">🇨🇷 Costa Rica</option>
+        <option value="Honduras">🇭🇳 Honduras</option>
+        <option value="Guatemala">🇬🇹 Guatemala</option>
+        <option value="El Salvador">🇸🇻 El Salvador</option>
+        <option value="Cuba">🇨🇺 Cuba</option>
+        <option value="República Dominicana">🇩🇴 Rep. Dominicana</option>
+        <option value="Puerto Rico">🇵🇷 Puerto Rico</option>
+        <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+        <option value="Otro">🌍 Otro</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="vibrar();guardarPerfil()">💾 Guardar cambios</button>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+</div>
+
+<div class="screen" id="s-ubicacion">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfu"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Cambiar ubicación</div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div class="info-card">
+      <div class="info-card-title">📍 ¿Por qué es importante tu ubicación?</div>
+      <div class="info-card-text">Tu ubicación nos permite mostrarte coleccionistas que están cerca de ti. Así puedes intercambiar barajitas en persona de forma rápida y segura, sin depender de envíos.</div>
+    </div>
+    <button class="btn-primary" onclick="vibrar();usarGPS()">📡 Usar mi ubicación actual (GPS)</button>
+    <div class="divider">o escribe tu ciudad</div>
+    <div class="field"><label>Ciudad</label><input type="text" id="ub-ciudad" placeholder="Ej: Caracas, Maracaibo..." /></div>
+    <div class="field"><label>País</label>
+      <select id="ub-pais">
+        <option value="">Selecciona tu país</option>
+        <option value="Venezuela">🇻🇪 Venezuela</option>
+        <option value="Colombia">🇨🇴 Colombia</option>
+        <option value="Argentina">🇦🇷 Argentina</option>
+        <option value="México">🇲🇽 México</option>
+        <option value="Brasil">🇧🇷 Brasil</option>
+        <option value="España">🇪🇸 España</option>
+        <option value="Ecuador">🇪🇨 Ecuador</option>
+        <option value="Otro">🌍 Otro</option>
+      </select>
+    </div>
+    <button class="btn-secondary" onclick="vibrar();guardarUbicacionManual()">💾 Guardar ubicación</button>
+    <div id="msg-ub-ok" class="msg-success"></div>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+</div>
+
+<div class="screen" id="s-notificaciones">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfn"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Notificaciones</div>
+  </div>
+  <div class="scroll"><div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div class="notif-card">
+      <div class="notif-card-title">🔔 ¿Por qué activar las notificaciones?</div>
+      <div class="notif-card-text">Las notificaciones son tu ventaja competitiva en SwappyFutbol. Sin ellas, puedes perderte intercambios increíbles mientras la app está cerrada.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">📲 ¿Qué tipo de notificaciones recibirás?</div>
+      <div style="display:flex;flex-direction:column">
+        <div class="notif-item"><div class="ni2">💬</div><div class="nt"><strong>Mensajes nuevos</strong> — Cuando alguien te escriba para intercambiar, te avisamos al instante aunque no tengas la app abierta.</div></div>
+        <div class="notif-item"><div class="ni2">🃏</div><div class="nt"><strong>Alguien quiere tu barajita</strong> — Te notificamos cuando un coleccionista cercano esté interesado en una de tus barajitas.</div></div>
+        <div class="notif-item"><div class="ni2">📡</div><div class="nt"><strong>Radar de Ofertas Pro</strong> — Si tienes Plan Pro, recibirás alertas cuando alguien cercano esté ofreciendo dinero por una barajita que tú tienes. ¡No te pierdas una venta!</div></div>
+        <div class="notif-item"><div class="ni2">⭐</div><div class="nt"><strong>Nueva valoración</strong> — Te avisamos cuando alguien te califique después de un intercambio.</div></div>
+      </div>
+    </div>
+    <div class="info-card" style="background:#FFF7ED;border-color:#FED7AA">
+      <div class="info-card-title" style="color:#C2410C">⚠️ Sin notificaciones...</div>
+      <div class="info-card-text" style="color:#9A3412">Puedes perder mensajes de coleccionistas interesados, ofertas de dinero por tus barajitas y oportunidades de intercambio únicas. Las notificaciones son gratuitas y puedes desactivarlas cuando quieras.</div>
+    </div>
+    <button class="btn-primary" onclick="vibrar();activarNotificaciones()"><i class="ti ti-bell"></i> Activar notificaciones</button>
+    <div id="msg-notif" class="msg-success"></div>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+</div>
+
+<div class="screen" id="s-ayuda">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfay"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Centro de ayuda</div>
+  </div>
+  <div class="scroll"><div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div class="info-card">
+      <div class="info-card-title">🔄 ¿Cómo funciona el intercambio?</div>
+      <div class="info-card-text">Agrega las barajitas que tienes repetidas marcándolas como "Para cambiar". Otros coleccionistas las verán en el mapa y podrán contactarte por chat para coordinar el intercambio en persona. ¡El intercambio siempre es gratis en SwappyFutbol!</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">🏷 ¿Cómo vendo una barajita?</div>
+      <div class="info-card-text">Marca tu barajita como "Vender" y ponle un precio. Tiene un costo de $0.50 por publicación para mantener la plataforma. Los compradores interesados te contactarán por chat y coordinan el pago entre ustedes.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">🔍 ¿Qué es "Busco esta barajita"?</div>
+      <div class="info-card-text">Si hay una barajita que no encuentras, publícala como "Busco" con el precio que ofreces. Los coleccionistas que la tengan verán tu oferta en el mapa y podrán contactarte. Cuesta $0.50 publicar una búsqueda.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">⚡ ¿Qué es el Álbum Rápido?</div>
+      <div class="info-card-text">Es la forma más rápida de registrar tus barajitas. Selecciona tu selección favorita y toca los círculos de las barajitas que tienes repetidas. En 2 minutos puedes publicar 20 barajitas de una vez sin escribir nada manualmente.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">📍 ¿Para qué sirve el radio de búsqueda?</div>
+      <div class="info-card-text">El radio determina qué tan lejos buscas coleccionistas. Con 2km ves solo los más cercanos. Con 100km ves coleccionistas de toda tu región. Activa tu GPS para ver las distancias exactas en metros y kilómetros.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">⭐ ¿Cómo funciona la valoración?</div>
+      <div class="info-card-text">Después de cada intercambio puedes calificar al otro usuario con 👍 o 👎. Esto construye tu reputación en la plataforma. Los usuarios con más valoraciones positivas generan más confianza y aparecen destacados. ¡Cumple siempre tus intercambios para mantener tu reputación alta!</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">🏆 ¿Qué es la insignia MVP?</div>
+      <div class="info-card-text">La insignia 🏆 MVP es exclusiva del Plan Pro. Aparece junto a tu nombre en todo SwappyFutbol y le indica a otros coleccionistas que eres un usuario serio, comprometido y confiable. ¡Es tu sello de calidad!</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">📡 ¿Qué es el Radar de Ofertas Pro?</div>
+      <div class="info-card-text">Es una función exclusiva del Plan Pro. Cuando alguien cerca tuyo ofrece dinero por una barajita que tú tienes, te llega una notificación automática con la oferta. Así puedes vender tus barajitas sin ni siquiera buscar comprador. ¡El dinero te encuentra a ti!</div>
+    </div>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+</div>
+<div class="screen" id="s-valoraciones">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfval"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Mi Valoración</div>
+  </div>
+  <div class="scroll"><div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="background:linear-gradient(135deg,var(--gd),var(--gm));border-radius:16px;padding:20px;text-align:center;color:#fff">
+      <div style="font-size:48px;font-weight:900" id="val-pct">-</div>
+      <div style="font-size:14px;font-weight:700;margin-top:4px">de valoraciones positivas</div>
+      <div style="display:flex;justify-content:center;gap:20px;margin-top:16px">
+        <div style="text-align:center"><div style="font-size:28px">👍</div><div style="font-size:20px;font-weight:800" id="val-pos">0</div><div style="font-size:11px;opacity:0.8">Positivas</div></div>
+        <div style="width:1px;background:rgba(255,255,255,0.3)"></div>
+        <div style="text-align:center"><div style="font-size:28px">👎</div><div style="font-size:20px;font-weight:800" id="val-neg">0</div><div style="font-size:11px;opacity:0.8">Negativas</div></div>
+        <div style="width:1px;background:rgba(255,255,255,0.3)"></div>
+        <div style="text-align:center"><div style="font-size:28px">🤝</div><div style="font-size:20px;font-weight:800" id="val-total">0</div><div style="font-size:11px;opacity:0.8">Totales</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">⭐ ¿Qué es la valoración?</div>
+      <div class="info-card-text">Tu valoración refleja la experiencia que otros coleccionistas han tenido contigo. Después de cada intercambio completado, la otra persona puede calificarte con 👍 o 👎. Cuanto más alta sea tu valoración, más confianza generarás en la comunidad y más intercambios podrás hacer.</div>
+    </div>
+    <div class="info-card" style="background:#FFF7ED;border-color:#FED7AA">
+      <div class="info-card-title" style="color:#C2410C">🏆 ¿Cómo mejorar mi valoración?</div>
+      <div class="info-card-text" style="color:#9A3412">
+        ✅ Cumple siempre los intercambios que acuerdas<br>
+        ✅ Sé puntual y honesto con el estado de tus barajitas<br>
+        ✅ Responde los mensajes rápido<br>
+        ✅ Si no puedes completar un intercambio, avisa con tiempo<br>
+        ✅ Trata a los demás coleccionistas con respeto
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">📊 ¿Para qué sirve tener buena valoración?</div>
+      <div class="info-card-text">
+        🌟 Generas más confianza — otros quieren intercambiar contigo<br>
+        🌟 Apareces destacado en el mapa con Plan Pro<br>
+        🌟 Puedes optar a la insignia 🏆 MVP<br>
+        🌟 Más usuarios te contactarán primero<br>
+        🌟 Construyes una reputación duradera en la comunidad
+      </div>
+    </div>
+    <div id="historial-val">
+      <div class="sec-lbl" style="padding:8px 0">Últimas valoraciones recibidas</div>
+      <div id="lista-valoraciones"><div class="loading">Cargando...</div></div>
+    </div>
+    <div style="padding-bottom:20px"></div>
+  </div></div>
+</div>
+<div class="screen" id="s-planes">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbf5"></div>
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">Elige tu plan</div>
+  </div>
+  <div class="scroll">
+    <div class="plan-hero">
+      <div class="plan-hero-flags" id="plhf"></div>
+      <div class="crown-wrap"><i class="ti ti-crown" style="font-size:26px;color:#fff"></i></div>
+      <div style="font-size:18px;font-weight:800;color:#fff">Planes Swappy<span style="color:var(--aa)">Futbol</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:6px;font-weight:600">Empieza gratis · Sube cuando quieras · Cancela cuando quieras</div>
+    </div>
+    <div class="plan-cards-wrap">
+      <div class="plan-card" onclick="vibrar();selPlan('gratis')">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">🆓 Gratis</div><div style="text-align:right"><div class="pp">$0</div><div class="pperiod">siempre</div></div></div>
+        <div class="pf">
+          <div class="fr">✅ Ver barajitas de coleccionistas cerca</div>
+          <div class="fr">✅ Hasta 10 barajitas para cambio por mes (se renuevan cada mes)</div>
+          <div class="fr">✅ Radio de búsqueda de 2km</div>
+          <div class="fr off">❌ Solo 3 conversaciones por chat al mes</div>
+          <div class="fr off">❌ Sin notificaciones push — puedes perderte intercambios</div>
+          <div class="fr off">❌ No puedes calificar ni ser calificado por otros</div>
+          <div class="fr off">❌ No puedes vender ni publicar búsquedas</div>
+        </div>
+      </div>
+      <div class="plan-card sel" id="pc-basico" onclick="vibrar();selPlan('basico')">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">⭐ Básico <span class="pbadge">Más popular</span></div><div style="text-align:right"><div class="pp">$2</div><div class="pperiod">/mes</div></div></div>
+        <div class="pf">
+          <div class="fr">✅ Todo lo del plan gratis</div>
+          <div class="fr">✅ Barajitas ilimitadas para cambio por mes</div>
+          <div class="fr">✅ Radio de búsqueda hasta 25km</div>
+          <div class="fr">✅ Chat ilimitado con todos los coleccionistas</div>
+          <div class="fr">✅ Notificaciones push activadas — no te pierdas nada</div>
+          <div class="fr">✅ Sistema de valoración activo — construye tu reputación</div>
+          <div class="fr">✅ Tu perfil aparece visible en el mapa para otros</div>
+          <div class="fr off">❌ Sin insignia MVP ni radar de ofertas</div>
+        </div>
+      </div>
+      <div class="plan-card" id="pc-pro" onclick="vibrar();selPlan('pro')">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">🏆 Pro <span class="pbadge">Todo incluido</span></div><div style="text-align:right"><div class="pp">$5</div><div class="pperiod">/mes</div></div></div>
+        <div class="pf">
+          <div class="fr">✅ Todo lo del plan Básico</div>
+          <div class="fr">✅ Vender barajitas y publicar búsquedas</div>
+          <div class="fr">✅ Aparecer primero en búsquedas y mapa</div>
+          <div class="fr">✅ Radio de búsqueda hasta 100km</div>
+          <div class="fr">✅ 📡 Radar de Ofertas — te notificamos cuando alguien cercano ofrece dinero por tus barajitas</div>
+          <div class="fr">✅ Estadísticas de tu perfil e historial</div>
+          <div class="fr">✅ 🏆 Insignia MVP visible en tu perfil — sello de confianza</div>
+          <div class="fr">✅ Soporte prioritario</div>
+        </div>
+      </div>
+    </div>
+    <div class="cta-section">
+      <button class="btn-primary" id="cta-plan" onclick="vibrar();go('s-profile')">⭐ Activar Básico · $2/mes</button>
+      <div class="guarantee">🛡 Cancela cuando quieras · Sin compromisos</div>
+      <button class="btn-link" style="display:block;margin:8px auto 0;text-align:center" onclick="vibrar();go('s-profile')">Continuar gratis</button>
+    </div>
+    <div style="padding-bottom:20px"></div>
+  </div>
+</div>
+
+<!-- PANTALLA COMPRAR -->
+<div class="screen" id="s-comprar">
+  <div class="topbar">
+    <div class="topbar-flags" id="tbfcomprar"></div>
+    <button class="tb-back" onclick="vibrar();go('s-home')">←</button>
+    <div class="tb-title">💰 Comprar barajitas</div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px;display:flex;flex-direction:column;gap:12px">
+      <div class="info-card" style="background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-color:#C7D2FE">
+        <div class="info-card-title" style="color:#4F46E5">🔍 ¿Cómo funciona Comprar?</div>
+        <div class="info-card-text" style="color:#4338CA">Publica la barajita que buscas con el precio que ofreces. Los coleccionistas que la tengan te contactarán por chat. ¡Tú decides con quién hacer el trato!</div>
+      </div>
+      <div id="msg-comprar-error" class="msg-error"></div>
+      <div id="msg-comprar-ok" class="msg-success"></div>
+      <div class="field"><label>Álbum</label>
+        <div class="album-pills">
+          <div class="album-pill active" onclick="vibrar();selAlbumComprar(this)">Mundial 2026</div>
+          <div class="album-pill" onclick="vibrar();selAlbumComprar(this)">Champions 2025</div>
+          <div class="album-pill" onclick="vibrar();selAlbumComprar(this)">LaLiga 2025</div>
+          <div class="album-pill" onclick="vibrar();selAlbumComprar(this)">Otro</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Nº de barajita</label><input type="number" id="c-num" placeholder="Ej: 17 (Messi)" oninput="updPrevComprar()" /></div>
+        <div class="field"><label>País del equipo</label>
+          <select id="c-pais" onchange="updPrevComprar()">
+            <option value="">Selecciona país</option>
+            <option value="🇩🇿 Argelia">🇩🇿 Argelia</option><option value="🇦🇷 Argentina">🇦🇷 Argentina</option>
+            <option value="🇦🇺 Australia">🇦🇺 Australia</option><option value="🇧🇪 Bélgica">🇧🇪 Bélgica</option>
+            <option value="🇧🇦 Bosnia">🇧🇦 Bosnia</option><option value="🇧🇷 Brasil">🇧🇷 Brasil</option>
+            <option value="🇨🇦 Canadá">🇨🇦 Canadá</option><option value="🇨🇻 Cabo Verde">🇨🇻 Cabo Verde</option>
+            <option value="🇨🇩 Congo DR">🇨🇩 Congo DR</option><option value="🇨🇴 Colombia">🇨🇴 Colombia</option>
+            <option value="🇭🇷 Croacia">🇭🇷 Croacia</option><option value="🇨🇼 Curazao">🇨🇼 Curazao</option>
+            <option value="🇨🇿 Rep. Checa">🇨🇿 Rep. Checa</option><option value="🇪🇨 Ecuador">🇪🇨 Ecuador</option>
+            <option value="🇪🇬 Egipto">🇪🇬 Egipto</option><option value="🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra</option>
+            <option value="🇪🇸 España">🇪🇸 España</option><option value="🇫🇷 Francia">🇫🇷 Francia</option>
+            <option value="🇩🇪 Alemania">🇩🇪 Alemania</option><option value="🇬🇭 Ghana">🇬🇭 Ghana</option>
+            <option value="🇭🇹 Haití">🇭🇹 Haití</option><option value="🇮🇷 Irán">🇮🇷 Irán</option>
+            <option value="🇮🇶 Irak">🇮🇶 Irak</option><option value="🇯🇴 Jordania">🇯🇴 Jordania</option>
+            <option value="🇯🇵 Japón">🇯🇵 Japón</option><option value="🇰🇷 Corea del Sur">🇰🇷 Corea del Sur</option>
+            <option value="🇸🇦 Arabia Saudita">🇸🇦 Arabia Saudita</option><option value="🇲🇦 Marruecos">🇲🇦 Marruecos</option>
+            <option value="🇲🇽 México">🇲🇽 México</option><option value="🇳🇱 Países Bajos">🇳🇱 Países Bajos</option>
+            <option value="🇳🇴 Noruega">🇳🇴 Noruega</option><option value="🇳🇿 Nueva Zelanda">🇳🇿 Nueva Zelanda</option>
+            <option value="🇵🇦 Panamá">🇵🇦 Panamá</option><option value="🇵🇾 Paraguay">🇵🇾 Paraguay</option>
+            <option value="🇵🇹 Portugal">🇵🇹 Portugal</option><option value="🇶🇦 Qatar">🇶🇦 Qatar</option>
+            <option value="🇿🇦 Sudáfrica">🇿🇦 Sudáfrica</option><option value="🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escocia</option>
+            <option value="🇸🇳 Senegal">🇸🇳 Senegal</option><option value="🇨🇭 Suiza">🇨🇭 Suiza</option>
+            <option value="🇸🇪 Suecia">🇸🇪 Suecia</option><option value="🇹🇳 Túnez">🇹🇳 Túnez</option>
+            <option value="🇹🇷 Turquía">🇹🇷 Turquía</option><option value="🇺🇾 Uruguay">🇺🇾 Uruguay</option>
+            <option value="🇺🇸 Estados Unidos">🇺🇸 Estados Unidos</option><option value="🇺🇿 Uzbekistán">🇺🇿 Uzbekistán</option>
+            <option value="🇨🇮 Costa Marfil">🇨🇮 Costa Marfil</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Jugador</label><input type="text" id="c-jugador" placeholder="Ej: Lionel Messi" oninput="updPrevComprar()" /></div>
+      <div class="field"><label>Mi oferta ($)</label><input type="number" id="c-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" /></div>
+      <div class="fee-notice">
+        <div class="fi">💡</div>
+        <div class="ft">Publicar una búsqueda tiene un costo de <strong>$0.50</strong> por barajita. Esto nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+      </div>
+      <div class="field"><label>Vista previa</label>
+        <div class="preview-card">
+          <div class="st-thumb" style="background:#4F46E5"><div class="st-num" id="cpv-num">#---</div><div class="st-flag" id="cpv-flag">?</div></div>
+          <div><div style="font-size:14px;font-weight:700;color:#111" id="cpv-jug">Nombre del jugador</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px;font-weight:600" id="cpv-team">País · Álbum</div>
+          <span class="tag tag-want" style="margin-top:6px;display:inline-block">🔍 Busco</span></div>
+        </div>
+      </div>
+      <button class="btn-primary" style="background:#4F46E5" onclick="vibrar();publicarBusqueda()">🔍 Publicar búsqueda ($0.50)</button>
+    </div>
+    <div class="sec-lbl">🏷 En venta cerca de ti</div>
+    <div id="lista-comprar"><div class="loading">Cargando...</div></div>
+    <div style="padding-bottom:20px"></div>
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-item" onclick="vibrar();go('s-home')"><i class="ti ti-world-search ni"></i>Buscar</button>
+    <button class="nav-item" onclick="vibrar();go('s-album')"><i class="ti ti-stack-2 ni"></i>Álbum</button>
+    <button class="nav-item" onclick="vibrar();go('s-mensajes')"><i class="ti ti-messages ni"></i>Mensajes</button>
+    <button class="nav-item" onclick="vibrar();go('s-profile')"><i class="ti ti-id-badge ni"></i>Perfil</button>
+  </nav>
+</div>
+
+</div><script>
+const SUPABASE_URL='https://kxmjgjmfrbofzpepamvf.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWpnam1mcmJvZnpwZXBhbXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMTc1NzQsImV4cCI6MjA5Nzg5MzU3NH0.7jAuOpciEG6NkJDhYMvWEk0YMt9nLolZleuHVLYdZHE';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:10}}});
+
+function vibrar(){
+  try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=200;
+    g.gain.setValueAtTime(0.1,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.05);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.05);
+  }catch(e){}
+}
+
+const codes=['ve','ar','br','co','mx','es','pt','fr','de','it','gb','us','jp','kr','nl','be','ch','au','ca','pl','se','no','dk','tr','ua','gr','in','cn','za','eg','ng','ma','sn','cl','pe','uy','ec','pa','cr','do','cu','jm','tt','ir','sa','ae','qa','il','pk','bd','th','vn','id','my','ph','sg','nz','zw','ke','gh','tn','dz','et','cm','ci','ug'];
+function furl(c){return`https://cdn.jsdelivr.net/gh/hampusborgos/country-flags@main/svg/${c}.svg`}
+const sh=[...codes].sort(()=>Math.random()-.5);
+const grid=document.getElementById('flagGrid');
+for(let i=0;i<40;i++){const d=document.createElement('div');d.className='flag-cell';const img=document.createElement('img');img.src=furl(sh[i%sh.length]);img.alt='';d.appendChild(img);grid.appendChild(d)}
+const strip=document.getElementById('stripInner');
+let hh='';[...codes,...codes].forEach(c=>{hh+=`<img src="${furl(c)}" alt="" />`});strip.innerHTML=hh+hh;
+function ponerBanderas(elId){const el=document.getElementById(elId);if(!el)return;let html='';sh.slice(0,12).forEach(c=>{html+=`<img src="${furl(c)}" alt="" />`});el.innerHTML=html;}
+
+const ALBUM={
+  ARG:{flag:'🇦🇷',nombre:'Argentina',code:'ar',jugadores:['Escudo (foil)','Emiliano Martinez','Nahuel Molina','Cristian Romero','Nicolas Otamendi','Nicolas Tagliafico','Leonardo Balerdi','Enzo Fernandez','Alexis Mac Allister','Rodrigo De Paul','Exequiel Palacios','Leandro Paredes','Foto Equipo','Nico Paz','Franco Mastantuono','Nico Gonzalez','Lionel Messi','Lautaro Martinez','Julian Alvarez','Giuliano Simeone']},
+  BRA:{flag:'🇧🇷',nombre:'Brasil',code:'br',jugadores:['Escudo (foil)','Alisson','Bento','Marquinhos','Eder Militao','Gabriel Magalhaes','Danilo','Wesley','Lucas Paqueta','Casemiro','Bruno Guimaraes','Luiz Henrique','Foto Equipo','Vinicius Jr','Rodrygo','Joao Pedro','Matheus Cunha','Gabriel Martinelli','Raphinha','Estevao']},
+  COL:{flag:'🇨🇴',nombre:'Colombia',code:'co',jugadores:['Escudo (foil)','Camilo Vargas','David Ospina','Davinson Sanchez','Yerry Mina','Daniel Munoz','Johan Mojica','Jhon Lucumi','Santiago Arias','Jefferson Lerma','Kevin Castano','Richard Rios','Foto Equipo','James Rodriguez','Juan F. Quintero','Jorge Carrascal','Jon Arias','Jhon Cordova','Luis Suarez','Luis Diaz']},
+  ESP:{flag:'🇪🇸',nombre:'España',code:'es',jugadores:['Escudo (foil)','Unai Simon','Robin Le Normand','Aymeric Laporte','Dean Huijsen','Pedro Porro','Dani Carvajal','Marc Cucurella','Martin Zubimendi','Rodri','Pedri','Fabian Ruiz','Foto Equipo','Mikel Merino','Lamine Yamal','Dani Olmo','Nico Williams','Ferran Torres','Alvaro Morata','Mikel Oyarzabal']},
+  FRA:{flag:'🇫🇷',nombre:'Francia',code:'fr',jugadores:['Escudo (foil)','Mike Maignan','Theo Hernandez','William Saliba','Jules Kounde','Ibrahima Konate','Dayot Upamecano','Lucas Digne','Aurelien Tchouameni','Eduardo Camavinga','Manu Kone','Adrien Rabiot','Foto Equipo','Michael Olise','Ousmane Dembele','Bradley Barcola','Desire Doue','Kingsley Coman','Hugo Ekitike','Kylian Mbappe']},
+  POR:{flag:'🇵🇹',nombre:'Portugal',code:'pt',jugadores:['Escudo (foil)','Diogo Costa','Jose Sa','Ruben Dias','Joao Cancelo','Diogo Dalot','Nuno Mendes','Goncalo Inacio','Bernardo Silva','Bruno Fernandes','Ruben Neves','Vitinha','Foto Equipo','Joao Neves','Cristiano Ronaldo','Francisco Trincao','Joao Felix','Goncalo Ramos','Pedro Neto','Rafael Leao']},
+  MEX:{flag:'🇲🇽',nombre:'Mexico',code:'mx',jugadores:['Escudo (foil)','Luis Malagon','Johan Vasquez','Jorge Sanchez','Cesar Montes','Jesus Gallardo','Israel Reyes','Diego Lainez','Carlos Rodriguez','Edson Alvarez','Orbelin Pineda','Marcel Ruiz','Foto Equipo','Erick Sanchez','Hirving Lozano','Santiago Gimenez','Raul Jimenez','Alexis Vega','Roberto Alvarado','Cesar Huerta']},
+  USA:{flag:'🇺🇸',nombre:'Estados Unidos',code:'us',jugadores:['Escudo (foil)','Matt Turner','Patrick Schulte','Tim Ream','Chris Richards','Miles Robinson','Antonee Robinson','Sergino Dest','Weston McKennie','Tyler Adams','Yunus Musah','Luca De La Torre','Foto Equipo','Giovanni Reyna','Christian Pulisic','Tim Weah','Folarin Balogun','Josh Sargent','Ricardo Pepi','Brenden Aaronson']},
+  GER:{flag:'🇩🇪',nombre:'Alemania',code:'de',jugadores:['Escudo (foil)','Marc-Andre ter Stegen','Jonathan Tah','David Raum','Nico Schlotterbeck','Antonio Rudiger','Waldemar Anton','Rode Baku','Maximilian Mittelstadt','Joshua Kimmich','Florian Wirtz','Felix Nmecha','Foto Equipo','Leon Goretzka','Jamal Musiala','Serge Gnabry','Kai Havertz','Leroy Sane','Karim Adevemi','Nick Woltemade']},
+  ENG:{flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',nombre:'Inglaterra',code:'gb',jugadores:['Escudo (foil)','Jordan Pickford','Dean Henderson','Kyle Walker','John Stones','Marc Guehi','Luke Shaw','Trent Alexander-Arnold','Declan Rice','Jude Bellingham','Kobbie Mainoo','Phil Foden','Foto Equipo','Bukayo Saka','Raheem Sterling','Marcus Rashford','Jack Grealish','Harry Kane','Ollie Watkins','Cole Palmer']},
+  NED:{flag:'🇳🇱',nombre:'Paises Bajos',code:'nl',jugadores:['Escudo (foil)','Bart Verbruggen','Mark Flekken','Virgil van Dijk','Stefan de Vrij','Denzel Dumfries','Daley Blind','Nathan Ake','Ryan Gravenberch','Teun Koopmeiners','Frenkie de Jong','Joey Veerman','Foto Equipo','Tijjani Reijnders','Cody Gakpo','Donyell Malen','Steven Bergwijn','Memphis Depay','Brian Brobbey','Wout Weghorst']},
+  URU:{flag:'🇺🇾',nombre:'Uruguay',code:'uy',jugadores:['Escudo (foil)','Sergio Rochet','Sebastian Sosa','Ronald Araujo','Jose Maria Gimenez','Mathias Olivera','Nahitan Nandez','Rodrigo Bentancur','Federico Valverde','Manuel Ugarte','Nicolas De La Cruz','Matias Vecino','Foto Equipo','Facundo Pellistri','Darwin Nunez','Maximiliano Araujo','Brian Rodriguez','Agustin Canobbio','Edinson Cavani','Luis Suarez']},
+  CAN:{flag:'🇨🇦',nombre:'Canada',code:'ca',jugadores:['Escudo (foil)','Maxime Crepeau','Milan Borjan','Alistair Johnston','Kamal Miller','Derek Cornelius','Richie Laryea','Alphonso Davies','Mark-Anthony Kaye','Stephen Eustaquio','Jonathan Osorio','Ismael Kone','Foto Equipo','Liam Millar','Junior Hoilett','Cyle Larin','Jonathan David','Lucas Cavallini','Tajon Buchanan','Theo Corbeanu']},
+  MAR:{flag:'🇲🇦',nombre:'Marruecos',code:'ma',jugadores:['Escudo (foil)','Yassine Bounou','Munir El Kajoui','Achraf Hakimi','Romain Saiss','Nayef Aguerd','Yahia Attiyat Allah','Noussair Mazraoui','Sofyan Amrabat','Azzedine Ounahi','Selim Amallah','Bilal El Khannouss','Foto Equipo','Hakim Ziyech','Ismael Saibari','Youssef En-Nesyri','Abde Ezzalzouli','Anass Zaroury','Ayoub El Kaabi','Zakaria Aboukhlal']},
+  SEN:{flag:'🇸🇳',nombre:'Senegal',code:'sn',jugadores:['Escudo (foil)','Edouard Mendy','Seny Dieng','Kalidou Koulibaly','Abdou Diallo','Youssouf Sabaly','Ismail Jakobs','Pape Abou Cisse','Idrissa Gueye','Pape Matar Sarr','Nampalys Mendy','Lamine Camara','Foto Equipo','Sadio Mane','Ismaila Sarr','Krepin Diatta','Nicolas Jackson','Bamba Dieng','Habib Diallo','Iliman Ndiaye']},
+  BEL:{flag:'🇧🇪',nombre:'Belgica',code:'be',jugadores:['Escudo (foil)','Koen Casteels','Matz Sels','Toby Alderweireld','Jan Vertonghen','Timothy Castagne','Thomas Meunier','Arthur Theate','Axel Witsel','Kevin De Bruyne','Youri Tielemans','Amadou Onana','Foto Equipo','Leandro Trossard','Dodi Lukebakio','Johan Bakayoko','Lois Openda','Romelu Lukaku','Charles De Ketelaere','Jeremy Doku']},
+  KOR:{flag:'🇰🇷',nombre:'Corea del Sur',code:'kr',jugadores:['Escudo (foil)','Kim Seung-gyu','Jo Hyeon-woo','Kim Min-jae','Kim Young-gwon','Kim Jin-su','Lee Ki-je','Hwang In-beom','Jung Woo-young','Lee Jae-sung','Son Heung-min','Kwon Chang-hoon','Foto Equipo','Hwang Hee-chan','Cho Gue-sung','Oh Hyeon-gyu','Lee Kang-in','Baek Seung-ho','Jeong Sang-bin','Yang Hyun-jun']},
+  JPN:{flag:'🇯🇵',nombre:'Japon',code:'jp',jugadores:['Escudo (foil)','Shuichi Gonda','Zion Suzuki','Maya Yoshida','Ko Itakura','Yuto Nagatomo','Hiroki Ito','Takehiro Tomiyasu','Wataru Endo','Ao Tanaka','Sho Ito','Reo Hatate','Foto Equipo','Junya Ito','Kaoru Mitoma','Ritsu Doan','Daichi Kamada','Takumi Minamino','Ayase Ueda','Keito Nakamura']},
+  SUI:{flag:'🇨🇭',nombre:'Suiza',code:'ch',jugadores:['Escudo (foil)','Yann Sommer','Gregor Kobel','Manuel Akanji','Fabian Schar','Nico Elvedi','Ricardo Rodriguez','Silvan Widmer','Granit Xhaka','Remo Freuler','Denis Zakaria','Xherdan Shaqiri','Foto Equipo','Ruben Vargas','Ardon Jashari','Michel Aebischer','Dan Ndoye','Zeki Amdouni','Breel Embolo','Noah Okafor']},
+  AUS:{flag:'🇦🇺',nombre:'Australia',code:'au',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  ECU:{flag:'🇪🇨',nombre:'Ecuador',code:'ec',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Moises Caicedo','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Enner Valencia']},
+  CRO:{flag:'🇭🇷',nombre:'Croacia',code:'hr',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Mateo Kovacic','Luka Modric','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Andrej Kramaric','Jugador 18','Jugador 19','Jugador 20']},
+  GHA:{flag:'🇬🇭',nombre:'Ghana',code:'gh',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Mohammed Kudus','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Inaki Williams','Jugador 20']},
+  TUN:{flag:'🇹🇳',nombre:'Tunez',code:'tn',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Hannibal Mejbri','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  TUR:{flag:'🇹🇷',nombre:'Turquia',code:'tr',jugadores:['Escudo (foil)','Altay Bayindir','Ugurcan Cakir','Merih Demiral','Samet Akaydin','Zeki Celik','Ferdi Kadioglu','Caglar Soyuncu','Hakan Calhanoglu','Okay Yokuslu','Kaan Ayhan','Ismail Yuksek','Foto Equipo','Baris Alper Yilmaz','Arda Guler','Kerem Akturkoglu','Yunus Akgun','Yusuf Yazici','Cenk Tosun','Jugador 20']},
+  KSA:{flag:'🇸🇦',nombre:'Arabia Saudita',code:'sa',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Salem Al-Dawsari','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  PAR:{flag:'🇵🇾',nombre:'Paraguay',code:'py',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Miguel Almiron','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Antonio Sanabria','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  QAT:{flag:'🇶🇦',nombre:'Qatar',code:'qa',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Hassan Al-Haydos','Akram Afif','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  SCO:{flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',nombre:'Escocia',code:'gb-sct',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Andrew Robertson','Jugador 6','Jugador 7','John McGinn','Callum McGregor','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Billy Gilmour','Jugador 17','Jugador 18','Jugador 19','Lawrence Shankland']},
+  NOR:{flag:'🇳🇴',nombre:'Noruega',code:'no',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Kristoffer Ajer','Jugador 8','Sander Berge','Martin Odegaard','Jugador 11','Jugador 12','Foto Equipo','Alexander Sorloth','Erling Haaland','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  NZL:{flag:'🇳🇿',nombre:'Nueva Zelanda',code:'nz',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Sarpreet Singh','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Chris Wood','Jugador 19','Jugador 20']},
+  EGY:{flag:'🇪🇬',nombre:'Egipto',code:'eg',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Mohamed Salah','Omar Marmoush','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  IRN:{flag:'🇮🇷',nombre:'Iran',code:'ir',jugadores:['Escudo (foil)','Alireza Beiranvand','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Sardar Azmoun','Mehdi Taremi','Jugador 16','Alireza Jahanbakhsh','Jugador 18','Jugador 19','Jugador 20']},
+  CZE:{flag:'🇨🇿',nombre:'Rep. Checa',code:'cz',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Tomas Soucek','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Patrik Schick','Adam Hlozek','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  BIH:{flag:'🇧🇦',nombre:'Bosnia',code:'ba',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Sead Kolasinac','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Miralem Pjanic','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Edin Dzeko','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  CIV:{flag:'🇨🇮',nombre:'Costa Marfil',code:'ci',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Franck Kessie','Jugador 8','Jugador 9','Nicolas Pepe','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Amad Diallo','Jugador 18','Jugador 19','Jugador 20']},
+  HAI:{flag:'🇭🇹',nombre:'Haiti',code:'ht',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  RSA:{flag:'🇿🇦',nombre:'Sudafrica',code:'za',jugadores:['Escudo (foil)','Ronwen Williams','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Percy Tau','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Lyle Foster','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  SWE:{flag:'🇸🇪',nombre:'Suecia',code:'se',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Victor Lindelof','Jugador 7','Jugador 8','Dejan Kulusevski','Emil Forsberg','Jugador 11','Jugador 12','Foto Equipo','Alexander Isak','Anthony Elanga','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  PAN:{flag:'🇵🇦',nombre:'Panama',code:'pa',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Michael Amir Murillo','Anibal Godoy','Adalberto Carrasquilla','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Cecilio Waterman','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  CUW:{flag:'🇨🇼',nombre:'Curazao',code:'cw',jugadores:['Escudo (foil)','Eloy Room','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Leandro Bacuna','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  CPV:{flag:'🇨🇻',nombre:'Cabo Verde',code:'cv',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jamiro Monteiro','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Garry Rodrigues','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  ALG:{flag:'🇩🇿',nombre:'Argelia',code:'dz',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Ismael Bennacer','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Riyad Mahrez','Yacine Brahimi','Jugador 16','Jugador 17','Said Benrahma','Jugador 19','Jugador 20']},
+  UZB:{flag:'🇺🇿',nombre:'Uzbekistan',code:'uz',jugadores:['Escudo (foil)','Jugador 2','Eldor Shomurodov','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Abbosbek Fayzullaev','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  IRQ:{flag:'🇮🇶',nombre:'Irak',code:'iq',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Ayman Hussein','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  JOR:{flag:'🇯🇴',nombre:'Jordania',code:'jo',jugadores:['Escudo (foil)','Jugador 2','Jugador 3','Jugador 4','Jugador 5','Jugador 6','Mousa Al-Taamari','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Jugador 14','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Jugador 20']},
+  COD:{flag:'🇨🇩',nombre:'Congo DR',code:'cd',jugadores:['Escudo (foil)','Jugador 2','Chancel Mbemba','Jugador 4','Jugador 5','Jugador 6','Jugador 7','Jugador 8','Jugador 9','Jugador 10','Jugador 11','Jugador 12','Foto Equipo','Cedric Bakambu','Jugador 15','Jugador 16','Jugador 17','Jugador 18','Jugador 19','Silas Wissa']}
+};
+
+const selecciones=Object.entries(ALBUM).map(([prefix,data])=>({prefix,...data}));
+let currentUser=null,chatConUser=null,chatSub=null,mapa=null,marcadores=[],miLat=null,miLng=null,radioActual=5,circuloRadio=null,selActual=null,albumTipo='cambio',albumSeleccionado={};
+
+function calcDistancia(lat1,lng1,lat2,lng2){const R=6371;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function formatDist(km){if(km<1)return Math.round(km*1000)+'m';return km.toFixed(1)+' km';}
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='s-home'){cargarBarajitas();setTimeout(()=>{iniciarMapa();actualizarMapa();},300);}
+  if(id==='s-profile')cargarPerfil();
+  if(id==='s-mensajes')cargarConversaciones();
+  if(id==='s-album')iniciarAlbum();
+  if(id==='s-editar')cargarDatosEditar();
+  if(id==='s-valoraciones')cargarValoraciones();
+  if(id==='s-comprar')cargarListaComprar();
+  ['tbf1','tbf2','tbf3','tbf4','tbf5','tbfe','tbfu','tbfn','tbfay','tbfv','ahf','phf','plhf','tbfval','tbfcomprar'].forEach(function(id2){ponerBanderas(id2);});
+}
+
+function iniciarAlbum(){
+  const g=document.getElementById('sel-grid');
+  if(g.children.length>0)return;
+  ponerBanderas('ahf');
+  let html='';
+  selecciones.forEach(function(s,i){html+='<div class="sel-btn" id="sbtn-'+i+'" onclick="vibrar();seleccionarPais('+i+')"><img src="'+furl(s.code)+'" alt="'+s.nombre+'" onerror="this.style.display=\'none\'" /><span>'+s.flag+' '+s.nombre.split(' ')[0]+'</span></div>';});
+  g.innerHTML=html;
+}
+
+function seleccionarPais(idx){
+  document.querySelectorAll('.sel-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('sbtn-'+idx).classList.add('active');
+  selActual=selecciones[idx];
+  if(!albumSeleccionado[selActual.prefix])albumSeleccionado[selActual.prefix]={};
+  renderAlbumBody();
+}
+
+function renderAlbumBody(){
+  if(!selActual)return;
+  const jugadores=selActual.jugadores;
+  const estado=albumSeleccionado[selActual.prefix]||{};
+  const selCnt=Object.values(estado).filter(function(v){return v;}).length;
+  let html='<div class="album-section-title">'+selActual.flag+' '+selActual.nombre+'</div>';
+  html+='<div class="album-section-sub">Toca las barajitas que tienes repetidas - '+jugadores.length+' barajitas</div>';
+  html+='<div class="album-tipo-row"><div class="album-tipo-btn '+(albumTipo==='cambio'?'active-cambio':'')+'" onclick="vibrar();setAlbumTipo(\'cambio\')">Cambiar</div>';
+  html+='<div class="album-tipo-btn '+(albumTipo==='venta'?'active-venta':'')+'" onclick="vibrar();setAlbumTipo(\'venta\')">Venta</div></div>';
+  html+='<div class="album-counter">Seleccionadas: <span>'+selCnt+'</span> de '+jugadores.length+'</div>';
+  html+='<div class="stickers-wrap">';
+  jugadores.forEach(function(jug,i){
+    const codigo=selActual.prefix+'-'+(i+1<10?'0'+(i+1):''+(i+1));
+    const est=estado[codigo];
+    let cls='sticker-circle';
+    let tipoLabel='';
+    if(est==='cambio'){cls+=' sel-cambio';tipoLabel='🔄';}
+    else if(est==='venta'){cls+=' sel-venta';tipoLabel='🏷';}
+    const jugSafe=jug.replace(/'/g,'');
+    html+='<div class="'+cls+'" onclick="vibrar();toggleSticker(\''+codigo+'\',\''+jugSafe+'\')"><div class="sc-num">'+(i+1)+'</div><div class="sc-name">'+jug+'</div><div class="sc-tipo">'+tipoLabel+'</div></div>';
+  });
+  html+='</div><div class="album-actions">';
+  html+='<button class="btn-primary" onclick="vibrar();publicarDesdeAlbum()">Publicar '+selCnt+' barajita(s)</button>';
+  html+='<button class="btn-secondary" onclick="vibrar();limpiarAlbumSel()">Limpiar seleccion</button></div>';
+  document.getElementById('album-body').innerHTML=html;
+}
+
+function setAlbumTipo(tipo){albumTipo=tipo;renderAlbumBody();}
+function toggleSticker(codigo,jugador){
+  if(!selActual)return;
+  if(!albumSeleccionado[selActual.prefix])albumSeleccionado[selActual.prefix]={};
+  const est=albumSeleccionado[selActual.prefix][codigo];
+  if(!est)albumSeleccionado[selActual.prefix][codigo]=albumTipo;
+  else if(est===albumTipo)delete albumSeleccionado[selActual.prefix][codigo];
+  else albumSeleccionado[selActual.prefix][codigo]=albumTipo;
+  renderAlbumBody();
+}
+function limpiarAlbumSel(){if(!selActual)return;albumSeleccionado[selActual.prefix]={};renderAlbumBody();}
+
+async function publicarDesdeAlbum(){
+  if(!currentUser){alert('Debes iniciar sesion primero.');return;}
+  if(!selActual)return;
+  const estado=albumSeleccionado[selActual.prefix]||{};
+  const entries=Object.entries(estado).filter(function(e){return e[1];});
+  if(entries.length===0){alert('Selecciona al menos una barajita.');return;}
+  const pais=selActual.flag+' '+selActual.nombre;
+  let publicadas=0;
+  for(const [codigo,tipo] of entries){
+    const num=parseInt(codigo.split('-')[1]);
+    const jugador=selActual.jugadores[num-1]||'Barajita '+num;
+    await sb.from('barajitas').insert({user_id:currentUser.id,jugador:jugador,numero:num,pais:pais,album:'Mundial 2026',tipo:tipo,precio:null,cantidad:1,lat:miLat,lng:miLng});
+    publicadas++;
+  }
+  alert('¡'+publicadas+' barajita(s) publicadas!');
+  albumSeleccionado[selActual.prefix]={};
+  renderAlbumBody();
+}
+
+function iniciarMapa(){if(mapa)return;mapa=L.map('mapa-real',{zoomControl:true,attributionControl:false}).setView([10.4806,-66.9036],12);L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapa);}
+function limpiarMarcadores(){marcadores.forEach(function(m){mapa.removeLayer(m);});marcadores=[];}
+function dibujarRadio(){if(circuloRadio)mapa.removeLayer(circuloRadio);if(miLat&&miLng)circuloRadio=L.circle([miLat,miLng],{radius:radioActual*1000,color:'#0F6E56',fillColor:'#0F6E56',fillOpacity:0.06,weight:1.5,dashArray:'6'}).addTo(mapa);}
+function cambiarRadio(){radioActual=parseInt(document.getElementById('radio-km').value);dibujarRadio();cargarMarcadoresBarajitas(document.getElementById('search-inp').value);cargarBarajitas();}
+
+function pedirUbicacion(){
+  if(!mapa)iniciarMapa();limpiarMarcadores();
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    miLat=pos.coords.latitude;miLng=pos.coords.longitude;
+    const tuIcon=L.divIcon({html:'<div style="background:#0F6E56;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>',iconSize:[16,16],className:''});
+    const tm=L.marker([miLat,miLng],{icon:tuIcon}).addTo(mapa);tm.bindPopup('<b>Tu estas aqui</b>').openPopup();marcadores.push(tm);
+    mapa.setView([miLat,miLng],14);dibujarRadio();
+    if(currentUser)await sb.from('perfiles').update({lat:miLat,lng:miLng}).eq('id',currentUser.id);
+    cargarMarcadoresBarajitas('');cargarBarajitas();
+  },function(){alert('No se pudo obtener tu ubicacion.');});
+}
+
+async function usarGPS(){
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    miLat=pos.coords.latitude;miLng=pos.coords.longitude;
+    if(currentUser)await sb.from('perfiles').update({lat:miLat,lng:miLng}).eq('id',currentUser.id);
+    const ok=document.getElementById('msg-ub-ok');
+    ok.textContent='Ubicacion actualizada con GPS';ok.style.display='block';
+    document.getElementById('profile-loc').textContent='Ubicacion GPS activa';
+    setTimeout(function(){ok.style.display='none';},3000);
+  },function(){alert('No se pudo obtener el GPS.');});
+}
+
+async function guardarUbicacionManual(){
+  const ciudad=document.getElementById('ub-ciudad').value.trim();
+  const pais=document.getElementById('ub-pais').value;
+  if(!ciudad&&!pais){alert('Escribe tu ciudad o selecciona tu pais.');return;}
+  if(currentUser){await sb.from('perfiles').update({ciudad:ciudad+' '+pais}).eq('id',currentUser.id);}
+  const ok=document.getElementById('msg-ub-ok');
+  ok.textContent='Ubicacion guardada correctamente';ok.style.display='block';
+  document.getElementById('profile-loc').textContent=ciudad+', '+pais;
+  setTimeout(function(){ok.style.display='none';},3000);
+}
+
+async function actualizarMapa(){
+  if(!mapa)iniciarMapa();limpiarMarcadores();
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(async function(pos){
+      miLat=pos.coords.latitude;miLng=pos.coords.longitude;
+      const tuIcon=L.divIcon({html:'<div style="background:#0F6E56;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>',iconSize:[16,16],className:''});
+      const tm=L.marker([miLat,miLng],{icon:tuIcon}).addTo(mapa);tm.bindPopup('<b>Tu estas aqui</b>');marcadores.push(tm);
+      mapa.setView([miLat,miLng],14);dibujarRadio();
+      if(currentUser)await sb.from('perfiles').update({lat:miLat,lng:miLng}).eq('id',currentUser.id);
+      cargarMarcadoresBarajitas('');
+    },function(){mapa.setView([10.4806,-66.9036],12);cargarMarcadoresBarajitas('');});
+  }else{cargarMarcadoresBarajitas('');}
+}
+
+async function cargarMarcadoresBarajitas(filtro){
+  if(!filtro)filtro='';
+  if(!mapa)return;limpiarMarcadores();
+  if(miLat&&miLng){
+    const tuIcon=L.divIcon({html:'<div style="background:#0F6E56;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>',iconSize:[16,16],className:''});
+    const tm=L.marker([miLat,miLng],{icon:tuIcon}).addTo(mapa);tm.bindPopup('<b>Tu estas aqui</b>');marcadores.push(tm);dibujarRadio();
+  }
+  let q=sb.from('barajitas').select('*,perfiles(nombre,username,lat,lng)').not('perfiles.lat','is',null);
+  if(filtro&&filtro.length>=2)q=q.or('jugador.ilike.%'+filtro+'%,pais.ilike.%'+filtro+'%');
+  const res=await q;const data=res.data;if(!data||data.length===0)return;
+  const seen=new Set();
+  data.forEach(function(b){
+    if(!b.perfiles||!b.perfiles.lat||!b.perfiles.lng||b.user_id===currentUser?.id)return;
+    const dist=miLat&&miLng?calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng):0;
+    if(miLat&&miLng&&dist>radioActual)return;
+    if(seen.has(b.user_id))return;seen.add(b.user_id);
+    const color=b.tipo==='busco'?'#4F46E5':b.tipo==='cambio'?'#0F6E56':'#EF9F27';
+    const emoji=b.tipo==='busco'?'🔍':b.tipo==='cambio'?'🔄':'🏷';
+    const icon=L.divIcon({html:'<div style="background:'+color+';color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+emoji+'</div>',iconSize:[36,36],className:''});
+    const m=L.marker([b.perfiles.lat,b.perfiles.lng],{icon:icon}).addTo(mapa);
+    const bd=data.filter(function(x){return x.user_id===b.user_id;});
+    const lista=bd.slice(0,5).map(function(x){return '- '+x.jugador+' #'+(x.numero||'?');}).join('<br>');
+    const ds=miLat&&miLng?'<br><small>'+formatDist(dist)+'</small>':'';
+    const uid=b.user_id;const uname=b.perfiles.username;
+    m.bindPopup('<b>@'+uname+'</b>'+ds+'<br><small>'+bd.length+' barajita(s)</small><br>'+lista+'<br><br><button onclick="abrirChatDesdeBarajita(\''+uid+'\',\''+uname+'\')" style="background:#0F6E56;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700">Contactar</button>');
+    marcadores.push(m);
+  });
+  const lbl=document.getElementById('resultados-lbl');
+  if(lbl)lbl.textContent=filtro?'🔍 Resultados para "'+filtro+'" en '+radioActual+'km':'Barajitas en radio de '+radioActual+'km';
+}
+
+async function registrar(){
+  const nombre=document.getElementById('inp-nombre').value.trim();
+  const email=document.getElementById('inp-email').value.trim();
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('msg-welcome-error');const ok=document.getElementById('msg-welcome-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!nombre||!email||!pass){err.textContent='Completa todos los campos.';err.style.display='block';return;}
+  const res=await sb.auth.signUp({email:email,password:pass,options:{data:{nombre:nombre}}});
+  if(res.error){err.textContent=res.error.message;err.style.display='block';return;}
+  if(res.data.user){
+    currentUser=res.data.user;
+    await sb.from('perfiles').insert({id:res.data.user.id,nombre:nombre,username:email.split('@')[0]});
+    ok.textContent='Bienvenido a SwappyFutbol!';ok.style.display='block';
+    setTimeout(function(){go('s-home');},1500);
+  }
+}
+
+async function iniciarSesion(){
+  const email=document.getElementById('inp-email').value.trim();
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('msg-welcome-error');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='Ingresa tu correo y contrasena.';err.style.display='block';return;}
+  const res=await sb.auth.signInWithPassword({email:email,password:pass});
+  if(res.error){err.textContent='Correo o contrasena incorrectos.';err.style.display='block';return;}
+  currentUser=res.data.user;go('s-home');
+}
+
+async function cerrarSesion(){
+  if(chatSub)sb.removeChannel(chatSub);
+  await sb.auth.signOut();currentUser=null;miLat=null;miLng=null;go('s-welcome');
+}
+
+let filtroActual='todos';
+async function cargarBarajitas(){
+  const lista=document.getElementById('lista-barajitas');
+  lista.innerHTML='<div class="loading">Cargando...</div>';
+  let q=sb.from('barajitas').select('*,perfiles(nombre,username,lat,lng)').order('created_at',{ascending:false});
+  if(filtroActual!=='todos')q=q.eq('tipo',filtroActual);
+  const res=await q;const data=res.data;
+  if(res.error||!data||data.length===0){lista.innerHTML='<div class="empty-state"><div class="es-icon">🃏</div><p>Aun no hay barajitas.<br>Se el primero en agregar una!</p></div>';return;}
+  const busq=document.getElementById('search-inp').value.toLowerCase();
+  const filtrados=data.filter(function(b){
+    if(busq&&b.jugador.toLowerCase().indexOf(busq)<0&&(!b.pais||b.pais.toLowerCase().indexOf(busq)<0))return false;
+    if(miLat&&miLng&&b.perfiles&&b.perfiles.lat&&b.perfiles.lng){const dist=calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng);if(dist>radioActual)return false;}
+    return true;
+  });
+  if(filtrados.length===0){lista.innerHTML='<div class="empty-state"><div class="es-icon">🔍</div><p>No hay resultados.<br>Amplia el radio de busqueda.</p></div>';return;}
+  lista.innerHTML=filtrados.map(function(b){
+    const dist=miLat&&miLng&&b.perfiles&&b.perfiles.lat&&b.perfiles.lng?calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng):null;
+    const tagClass=b.tipo==='busco'?'tag-want':b.tipo==='cambio'?'tag-swap':'tag-sale';
+    const tagTxt=b.tipo==='busco'?'Busco $'+(b.precio||'?'):b.tipo==='cambio'?'Para cambiar':'En venta $'+b.precio;
+    const flag=b.pais?b.pais.split(' ')[0]:'🌍';
+    const pais=b.pais?b.pais.split(' ').slice(1).join(' '):'?';
+    const uid=b.user_id;const uname=b.perfiles?b.perfiles.username:'usuario';
+    return '<div class="sticker-card" onclick="vibrar();abrirChatDesdeBarajita(\''+uid+'\',\''+uname+'\')">'+
+      '<div class="st-thumb"><div class="st-num">#'+(b.numero||'?')+'</div><div class="st-flag">'+flag+'</div></div>'+
+      '<div class="st-info"><div class="st-name">'+b.jugador+'</div><div class="st-team">'+pais+' - '+b.album+'</div>'+
+      '<div class="st-tags"><span class="tag '+tagClass+'">'+tagTxt+'</span><span class="tag tag-qty">x'+b.cantidad+'</span></div></div>'+
+      '<div style="text-align:right"><div class="dist-pill">'+(dist!==null?formatDist(dist):'Cerca')+'</div><div class="user-mini">@'+uname+'</div></div></div>';
+  }).join('');
+}
+
+function filtrarTodo(q){cargarBarajitas();if(mapa&&q.length>=2)cargarMarcadoresBarajitas(q);else if(mapa)cargarMarcadoresBarajitas('');}
+function selFilter(el,tipo){document.querySelectorAll('.filter-pill').forEach(function(p){p.classList.remove('active');});el.classList.add('active');filtroActual=tipo;cargarBarajitas();}
+
+let tipoActual='cambio',albumActualAdd='Mundial 2026',qtyActual=1;
+function selTipo(t){
+  tipoActual=t;
+  ['cambio','venta','busco'].forEach(function(x){document.getElementById('t-'+x).className='type-btn';});
+  document.getElementById('t-'+t).className='type-btn active-'+t;
+  document.getElementById('precio-field').style.display=t==='venta'?'block':'none';
+  document.getElementById('oferta-field').style.display=t==='busco'?'block':'none';
+  document.getElementById('fee-box').style.display=(t==='venta'||t==='busco')?'block':'none';
+  const tag=document.getElementById('pv-tag');
+  if(t==='cambio'){tag.textContent='Para cambiar';tag.className='tag tag-swap';}
+  else if(t==='venta'){tag.textContent='En venta';tag.className='tag tag-sale';}
+  else{tag.textContent='Busco';tag.className='tag tag-want';}
+  const btn=document.getElementById('btn-publicar');
+  btn.textContent=t==='busco'?'Publicar busqueda ($0.50)':t==='venta'?'Publicar en venta ($0.50)':'Publicar para cambio (gratis)';
+}
+function selAlbum(el){document.querySelectorAll('.album-pill').forEach(function(p){p.classList.remove('active');});el.classList.add('active');albumActualAdd=el.textContent;updPrev();}
+function chgQty(d){qtyActual=Math.max(1,Math.min(99,qtyActual+d));document.getElementById('qty-val').textContent=qtyActual;}
+function updPrev(){
+  const num=document.getElementById('a-num').value;
+  const pais=document.getElementById('a-pais').value;
+  const jug=document.getElementById('a-jugador').value;
+  document.getElementById('pv-num').textContent=num?'#'+num:'#---';
+  if(pais){const pts=pais.split(' ');document.getElementById('pv-flag').textContent=pts[0];document.getElementById('pv-team').textContent=pts.slice(1).join(' ')+' - '+albumActualAdd;}
+  else{document.getElementById('pv-flag').textContent='?';document.getElementById('pv-team').textContent='Pais - '+albumActualAdd;}
+  document.getElementById('pv-jug').textContent=jug||'Nombre del jugador';
+}
+
+async function publicarBarajita(){
+  const err=document.getElementById('msg-add-error');const ok=document.getElementById('msg-add-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!currentUser){err.textContent='Debes iniciar sesion primero.';err.style.display='block';return;}
+  const jugador=document.getElementById('a-jugador').value.trim();
+  const pais=document.getElementById('a-pais').value;
+  if(!jugador||!pais){err.textContent='Completa el jugador y el pais.';err.style.display='block';return;}
+  const numero=document.getElementById('a-num').value;
+  let precio=null;
+  if(tipoActual==='venta')precio=parseFloat(document.getElementById('a-precio').value)||0;
+  if(tipoActual==='busco')precio=parseFloat(document.getElementById('a-oferta').value)||0;
+  const res=await sb.from('barajitas').insert({user_id:currentUser.id,jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualAdd,tipo:tipoActual,precio:precio,cantidad:qtyActual,lat:miLat,lng:miLng});
+  if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
+  ok.textContent='Barajita publicada exitosamente!';ok.style.display='block';
+  document.getElementById('a-jugador').value='';document.getElementById('a-num').value='';document.getElementById('a-pais').value='';
+  qtyActual=1;document.getElementById('qty-val').textContent='1';updPrev();
+  setTimeout(function(){ok.style.display='none';go('s-home');},1500);
+}
+
+async function eliminarBarajita(id){
+  if(!confirm('Eliminar esta barajita?'))return;
+  await sb.from('barajitas').delete().eq('id',id);
+  cargarPerfil();
+}
+
+async function cargarPerfil(){
+  if(!currentUser)return;
+  const res=await sb.from('perfiles').select('*').eq('id',currentUser.id).single();
+  const data=res.data;
+  if(data){
+    document.getElementById('profile-av-txt').textContent=data.nombre?data.nombre[0].toUpperCase():'?';
+    const nameEl=document.getElementById('profile-name');
+    nameEl.innerHTML=data.nombre||'Sin nombre';
+    const badge=document.getElementById('mvp-badge');
+    if(data.plan==='pro'){badge.style.display='inline-flex';}else{badge.style.display='none';}
+    nameEl.appendChild(badge);
+    document.getElementById('profile-email').textContent='@'+(data.username||currentUser.email);
+    if(data.avatar_url)mostrarAvatar(data.avatar_url);
+    if(data.ciudad)document.getElementById('profile-loc').textContent=data.ciudad;
+  }
+  const cntRes=await sb.from('barajitas').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
+  document.getElementById('stat-barajitas').textContent=cntRes.count||0;
+  const valRes=await sb.from('valoraciones').select('tipo').eq('para_user',currentUser.id);
+  if(valRes.data){
+    const pos=valRes.data.filter(function(r){return r.tipo==='pos';}).length;
+    const neg=valRes.data.filter(function(r){return r.tipo==='neg';}).length;
+    const total=pos+neg;
+    document.getElementById('stat-intercambios').textContent=total;
+    if(total>0){document.getElementById('stat-rating').textContent=Math.round((pos/total)*100)+'% 👍';}
+  }
+  const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const bs=bsRes.data;const g=document.getElementById('mis-barajitas');
+  let ghtml='';
+  if(bs&&bs.length>0){
+    bs.forEach(function(b){
+      const flag=b.pais?b.pais.split(' ')[0]:'🌍';
+      const tagC=b.tipo==='cambio'?'tag-swap':b.tipo==='busco'?'tag-want':'tag-sale';
+      const tagT=b.tipo==='cambio'?'🔄':b.tipo==='busco'?'🔍':'🏷';
+      ghtml+='<div class="sm-card"><button class="btn-del" onclick="vibrar();eliminarBarajita(\''+b.id+'\')">x</button>'+
+        '<div class="sm-th"><div class="sm-n">#'+(b.numero||'?')+'</div><div class="sm-f">'+flag+'</div></div>'+
+        '<div class="sm-nm">'+b.jugador+'</div><span class="tag '+tagC+'">'+tagT+'</span></div>';
+    });
+  }
+  ghtml+='<div class="add-c" onclick="vibrar();go(\'s-add\')"><span style="font-size:24px">+</span><span>Agregar barajita</span></div>';
+  g.innerHTML=ghtml;
+}
+
+async function cargarDatosEditar(){
+  if(!currentUser)return;
+  const res=await sb.from('perfiles').select('*').eq('id',currentUser.id).single();
+  const data=res.data;
+  if(data){
+    document.getElementById('edit-nombre').value=data.nombre||'';
+    document.getElementById('edit-username').value=data.username||'';
+    document.getElementById('edit-ciudad').value=data.ciudad||'';
+  }
+}
+
+async function guardarPerfil(){
+  const nombre=document.getElementById('edit-nombre').value.trim();
+  const username=document.getElementById('edit-username').value.trim().replace(/\s/g,'');
+  const ciudad=document.getElementById('edit-ciudad').value.trim();
+  const pais=document.getElementById('edit-pais').value;
+  const err=document.getElementById('msg-edit-error');const ok=document.getElementById('msg-edit-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!nombre){err.textContent='El nombre no puede estar vacio.';err.style.display='block';return;}
+  const res=await sb.from('perfiles').update({nombre:nombre,username:username,ciudad:ciudad+(pais?' - '+pais:'')}).eq('id',currentUser.id);
+  if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
+  ok.textContent='Perfil actualizado correctamente';ok.style.display='block';
+  setTimeout(function(){ok.style.display='none';go('s-profile');},1500);
+}
+
+async function subirFoto(input){
+  const file=input.files[0];if(!file||!currentUser)return;
+  const ext=file.name.split('.').pop();const path=currentUser.id+'/avatar.'+ext;
+  const res=await sb.storage.from('avatares').upload(path,file,{upsert:true});
+  if(res.error){alert('Error: '+res.error.message);return;}
+  const urlData=sb.storage.from('avatares').getPublicUrl(path);
+  await sb.from('perfiles').update({avatar_url:urlData.data.publicUrl}).eq('id',currentUser.id);
+  mostrarAvatar(urlData.data.publicUrl);
+}
+
+function mostrarAvatar(url){
+  if(!url)return;
+  const img=document.getElementById('profile-av-img');
+  const txt=document.getElementById('profile-av-txt');
+  img.src=url+'?t='+Date.now();img.style.display='block';txt.style.display='none';
+}
+
+async function activarNotificaciones(){
+  const msg=document.getElementById('msg-notif');
+  if('Notification' in window){
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){msg.textContent='Notificaciones activadas! Ahora no te perderás ningun intercambio.';msg.style.display='block';}
+    else{msg.textContent='Permiso denegado. Ve a configuracion de tu navegador.';msg.style.background='#fef2f2';msg.style.color='#dc2626';msg.style.display='block';}
+  }else{msg.textContent='Tu navegador no soporta notificaciones. Prueba con Chrome.';msg.style.display='block';}
+}
+
+async function cargarConversaciones(){
+  if(!currentUser){document.getElementById('conv-list').innerHTML='<div class="empty-state"><div class="es-icon">💬</div><p>Inicia sesion para ver tus mensajes</p></div>';return;}
+  const res=await sb.from('mensajes').select('*,de_perfil:perfiles!mensajes_de_user_fkey(nombre,username),para_perfil:perfiles!mensajes_para_user_fkey(nombre,username)').or('de_user.eq.'+currentUser.id+',para_user.eq.'+currentUser.id).order('created_at',{ascending:false});
+  const data=res.data;const conv=document.getElementById('conv-list');
+  if(!data||data.length===0){conv.innerHTML='<div class="empty-state"><div class="es-icon">💬</div><p>Sin mensajes aun.<br>Toca una barajita para chatear!</p></div>';return;}
+  const seen=new Set();const convs=[];
+  data.forEach(function(m){
+    const otherId=m.de_user===currentUser.id?m.para_user:m.de_user;
+    const otherPerfil=m.de_user===currentUser.id?m.para_perfil:m.de_perfil;
+    if(!seen.has(otherId)){
+      seen.add(otherId);
+      convs.push({userId:otherId,nombre:(otherPerfil&&otherPerfil.nombre)||'Usuario',username:(otherPerfil&&otherPerfil.username)||'usuario',lastMsg:m.contenido,time:new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),unread:!m.leido&&m.para_user===currentUser.id});
+    }
+  });
+  conv.innerHTML=convs.map(function(c){
+    return '<div class="conv-item" onclick="vibrar();abrirChat(\''+c.userId+'\',\''+c.nombre+'\',\''+c.username+'\')">'+
+      '<div class="conv-av">'+c.nombre[0].toUpperCase()+'</div>'+
+      '<div class="conv-info"><div class="conv-name">'+c.nombre+'</div><div class="conv-last">'+c.lastMsg+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="conv-time">'+c.time+'</div>'+(c.unread?'<div class="conv-unread">1</div>':'')+'</div></div>';
+  }).join('');
+}
+
+async function abrirChatDesdeBarajita(userId,username){
+  if(!currentUser){go('s-welcome');return;}
+  if(userId===currentUser.id){alert('Esta es tu propia barajita');return;}
+  const res=await sb.from('perfiles').select('nombre,username').eq('id',userId).single();
+  const data=res.data;
+  abrirChat(userId,(data&&data.nombre)||username,(data&&data.username)||username);
+}
+
+function abrirChat(userId,nombre,username){
+  chatConUser={id:userId,nombre:nombre,username:username};
+  document.getElementById('chat-av').textContent=nombre[0].toUpperCase();
+  document.getElementById('chat-nombre').textContent=nombre;
+  document.getElementById('chat-sub').textContent='@'+username;
+  document.getElementById('bubbles').innerHTML='';
+  go('s-chat');cargarMensajes();suscribirChat();
+}
+
+async function cargarMensajes(){
+  if(!currentUser||!chatConUser)return;
+  const res=await sb.from('mensajes').select('*').or('and(de_user.eq.'+currentUser.id+',para_user.eq.'+chatConUser.id+'),and(de_user.eq.'+chatConUser.id+',para_user.eq.'+currentUser.id+')').order('created_at',{ascending:true});
+  const data=res.data;
+  const bubbles=document.getElementById('bubbles');bubbles.innerHTML='';
+  if(data)data.forEach(function(m){agregarBurbuja(m);});
+  scrollChat();
+  if(data)await sb.from('mensajes').update({leido:true}).eq('para_user',currentUser.id).eq('de_user',chatConUser.id);
+}
+
+function agregarBurbuja(m){
+  const esPropio=m.de_user===currentUser.id;
+  const b=document.createElement('div');b.className='bubble '+(esPropio?'bout':'bin');
+  const hora=new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  b.innerHTML=m.contenido+(esPropio?'<div class="btime">'+hora+' vv</div>':'<div class="btime-in">'+hora+'</div>');
+  document.getElementById('bubbles').appendChild(b);
+}
+
+function scrollChat(){const s=document.getElementById('chat-scroll');s.scrollTop=s.scrollHeight;}
+
+function suscribirChat(){
+  if(chatSub)sb.removeChannel(chatSub);
+  chatSub=sb.channel('chat-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensajes',filter:'para_user=eq.'+currentUser.id},function(payload){
+    if(payload.new.de_user===chatConUser?.id){agregarBurbuja(payload.new);scrollChat();sb.from('mensajes').update({leido:true}).eq('id',payload.new.id);}
+    else{document.getElementById('notif-home').style.display='block';document.getElementById('notif-nav').style.display='block';}
+  }).subscribe();
+}
+
+async function enviarMsg(){
+  const inp=document.getElementById('chat-msg');const txt=inp.value.trim();
+  if(!txt||!currentUser||!chatConUser)return;inp.value='';
+  const res=await sb.from('mensajes').insert({de_user:currentUser.id,para_user:chatConUser.id,contenido:txt,leido:false}).select().single();
+  if(!res.error&&res.data)agregarBurbuja(res.data);scrollChat();
+}
+
+function marcarCompletado(){
+  if(!chatConUser)return;
+  if(confirm('Confirmas que completaste el intercambio con '+chatConUser.nombre+'?')){
+    document.getElementById('rating-nombre').textContent=chatConUser.nombre;
+    go('s-valorar');
+  }
+}
+async function cargarValoraciones(){
+  if(!currentUser)return;
+  const{data}=await sb.from('valoraciones').select('*,de_perfil:perfiles!valoraciones_de_user_fkey(nombre,username)').eq('para_user',currentUser.id).order('created_at',{ascending:false}).limit(20);
+  const pos=data?data.filter(r=>r.tipo==='pos').length:0;
+  const neg=data?data.filter(r=>r.tipo==='neg').length:0;
+  const total=pos+neg;
+  document.getElementById('val-pos').textContent=pos;
+  document.getElementById('val-neg').textContent=neg;
+  document.getElementById('val-total').textContent=total;
+  document.getElementById('val-pct').textContent=total>0?Math.round((pos/total)*100)+'%':'Sin valoraciones';
+  const lista=document.getElementById('lista-valoraciones');
+  if(!data||data.length===0){lista.innerHTML='<div class="empty-state"><div class="es-icon">⭐</div><p>Aun no tienes valoraciones.<br>Completa tu primer intercambio!</p></div>';return;}
+  lista.innerHTML=data.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:10px;background:#f9fafb;border-radius:12px;border:1.5px solid var(--border);margin-bottom:8px">
+    <div style="font-size:28px">${r.tipo==='pos'?'👍':'👎'}</div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:700">@${r.de_perfil?.username||'usuario'}</div>
+    <div style="font-size:11px;color:var(--gray)">${new Date(r.created_at).toLocaleDateString()}</div></div>
+    <div style="font-size:11px;font-weight:700;color:${r.tipo==='pos'?'var(--gd)':'var(--coral)'}">${r.tipo==='pos'?'Positiva':'Negativa'}</div>
+  </div>`).join('');
+}
+async function calificar(tipo){
+  if(!currentUser||!chatConUser)return;
+  try{await sb.from('valoraciones').insert({de_user:currentUser.id,para_user:chatConUser.id,tipo:tipo===1?'pos':'neg'});}catch(e){}
+  alert(tipo===1?'Calificaste positivamente a '+chatConUser.nombre:'Gracias por tu honestidad. Esto ayuda a la comunidad.');
+  go('s-mensajes');
+}
+
+function selPlan(p){
+  ['gratis','basico','pro'].forEach(function(id){const el=document.getElementById('pc-'+id);if(el)el.classList.toggle('sel',id===p);});
+  const btn=document.getElementById('cta-plan');
+  if(p==='gratis'){btn.textContent='Continuar gratis';btn.style.background='#6b7280';}
+  else if(p==='basico'){btn.textContent='Activar Basico - $2/mes';btn.style.background='var(--gd)';}
+  else{btn.textContent='Activar Pro - $5/mes';btn.style.background='var(--am)';}
+}
+
+// --- PANTALLA COMPRAR ---
+let albumActualComprar='Mundial 2026';
+function selAlbumComprar(el){
+  document.querySelectorAll('#s-comprar .album-pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');albumActualComprar=el.textContent;updPrevComprar();
+}
+function updPrevComprar(){
+  const num=document.getElementById('c-num').value;
+  const pais=document.getElementById('c-pais').value;
+  const jug=document.getElementById('c-jugador').value;
+  document.getElementById('cpv-num').textContent=num?'#'+num:'#---';
+  if(pais){const pts=pais.split(' ');document.getElementById('cpv-flag').textContent=pts[0];document.getElementById('cpv-team').textContent=pts.slice(1).join(' ')+' - '+albumActualComprar;}
+  else{document.getElementById('cpv-flag').textContent='?';document.getElementById('cpv-team').textContent='País - '+albumActualComprar;}
+  document.getElementById('cpv-jug').textContent=jug||'Nombre del jugador';
+}
+async function publicarBusqueda(){
+  const err=document.getElementById('msg-comprar-error');const ok=document.getElementById('msg-comprar-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!currentUser){err.textContent='Debes iniciar sesión primero.';err.style.display='block';return;}
+  const jugador=document.getElementById('c-jugador').value.trim();
+  const pais=document.getElementById('c-pais').value;
+  if(!jugador||!pais){err.textContent='Completa el jugador y el país.';err.style.display='block';return;}
+  const numero=document.getElementById('c-num').value;
+  const precio=parseFloat(document.getElementById('c-oferta').value)||0;
+  const res=await sb.from('barajitas').insert({user_id:currentUser.id,jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualComprar,tipo:'busco',precio:precio,cantidad:1,lat:miLat,lng:miLng});
+  if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
+  ok.textContent='¡Búsqueda publicada! Los coleccionistas te contactarán pronto.';ok.style.display='block';
+  document.getElementById('c-jugador').value='';document.getElementById('c-num').value='';document.getElementById('c-pais').value='';document.getElementById('c-oferta').value='';
+  updPrevComprar();setTimeout(function(){ok.style.display='none';},3000);
+  cargarListaComprar();
+}
+async function cargarListaComprar(){
+  const lista=document.getElementById('lista-comprar');
+  lista.innerHTML='<div class="loading">Cargando...</div>';
+  let q=sb.from('barajitas').select('*,perfiles(nombre,username,lat,lng)').eq('tipo','venta').order('created_at',{ascending:false});
+  const res=await q;const data=res.data;
+  if(res.error||!data||data.length===0){lista.innerHTML='<div class="empty-state"><div class="es-icon">🏷</div><p>No hay barajitas en venta cerca.<br>¡Sé el primero en publicar una búsqueda!</p></div>';return;}
+  const filtrados=data.filter(function(b){
+    if(miLat&&miLng&&b.perfiles&&b.perfiles.lat&&b.perfiles.lng){const dist=calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng);if(dist>radioActual)return false;}
+    return true;
+  });
+  if(filtrados.length===0){lista.innerHTML='<div class="empty-state"><div class="es-icon">🏷</div><p>No hay barajitas en venta en tu radio.<br>Amplía el radio de búsqueda.</p></div>';return;}
+  lista.innerHTML=filtrados.map(function(b){
+    const dist=miLat&&miLng&&b.perfiles&&b.perfiles.lat&&b.perfiles.lng?calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng):null;
+    const flag=b.pais?b.pais.split(' ')[0]:'🌍';
+    const pais=b.pais?b.pais.split(' ').slice(1).join(' '):'?';
+    const uid=b.user_id;const uname=b.perfiles?b.perfiles.username:'usuario';
+    return '<div class="sticker-card" onclick="vibrar();abrirChatDesdeBarajita(\''+uid+'\',\''+uname+'\')">'+
+      '<div class="st-thumb" style="background:#EF9F27"><div class="st-num">#'+(b.numero||'?')+'</div><div class="st-flag">'+flag+'</div></div>'+
+      '<div class="st-info"><div class="st-name">'+b.jugador+'</div><div class="st-team">'+pais+' - '+b.album+'</div>'+
+      '<div class="st-tags"><span class="tag tag-sale">En venta $'+b.precio+'</span><span class="tag tag-qty">x'+b.cantidad+'</span></div></div>'+
+      '<div style="text-align:right"><div class="dist-pill">'+(dist!==null?formatDist(dist):'Cerca')+'</div><div class="user-mini">@'+uname+'</div></div></div>';
+  }).join('');
+}
+
+function chkStr(v){
+  let s=0;
+  if(v.length>=6)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+  const c=['#ef4444','#f97316','#22c55e','#0F6E56'];
+  const l=['Muy debil','Regular','Buena','Muy segura'];
+  document.querySelectorAll('.str-seg').forEach(function(sg,i){sg.style.background=i<s?c[s-1]:'var(--border)';});
+  document.getElementById('strlbl').textContent=v.length?(l[s-1]||'Muy debil'):'Escribe tu contrasena';
+}
+function togPass(){const i=document.getElementById('inp-pass');i.type=i.type==='password'?'text':'password';}
+function swTab(n){
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===n);});
+  document.querySelectorAll('.tc').forEach(function(t,i){t.classList.toggle('active',i===n);});
+}
+
+window.addEventListener('load',async function(){
+  ['tbf1','tbf2','tbf3','tbf4','tbf5','tbfe','tbfu','tbfn','tbfay','tbfv','ahf','phf','plhf','tbfval','tbfcomprar'].forEach(function(id){ponerBanderas(id);});
+  const res=await sb.auth.getSession();
+  if(res.data.session){currentUser=res.data.session.user;go('s-home');suscribirChat();}
+});
+</script>
+</body>
+</html>
