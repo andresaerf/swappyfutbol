@@ -1497,15 +1497,17 @@ async function activarPlan(plan){
   const textoOriginal=btn.textContent;
   btn.textContent='Procesando...';btn.disabled=true;
   try{
+    const sessionRes=await sb.auth.getSession();
+    const token=sessionRes.data.session?.access_token;
     const res=await fetch('https://kxmjgjmfrbofzpepamvf.supabase.co/functions/v1/mp-suscripcion',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+sb.auth.session()?.access_token},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWpnam1mcmJvZnpwZXBhbXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMTc1NzQsImV4cCI6MjA5Nzg5MzU3NH0.7jAuOpciEG6NkJDhYMvWEk0YMt9nLolZleuHVLYdZHE'},
       body:JSON.stringify({plan:plan,user_id:currentUser.id,email:currentUser.email})
     });
     const data=await res.json();
     if(data.url){window.open(data.url,'_blank');}
-    else{alert('Error al procesar el pago. Intenta de nuevo.');}
-  }catch(e){alert('Error de conexión. Intenta de nuevo.');}
+    else{alert('Error al procesar el pago: '+(data.error||'Intenta de nuevo.'));}
+  }catch(e){alert('Error de conexión: '+e.message);}
   finally{btn.textContent=textoOriginal;btn.disabled=false;}
 }
 
