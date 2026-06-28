@@ -1505,7 +1505,7 @@ async function activarPlan(plan){
       body:JSON.stringify({plan:plan,user_id:currentUser.id,email:currentUser.email})
     });
     const data=await res.json();
-    if(data.url){window.open(data.url,'_blank');}
+    if(data.url){window.location.href=data.url;}
     else{alert('Error al procesar el pago: '+(data.error||'Intenta de nuevo.'));}
   }catch(e){alert('Error de conexión: '+e.message);}
   finally{btn.textContent=textoOriginal;btn.disabled=false;}
