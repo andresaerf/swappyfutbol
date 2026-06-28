@@ -818,7 +818,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
       </div>
     </div>
     <div class="cta-section">
-      <button class="btn-primary" id="cta-plan" onclick="vibrar();go('s-profile')">⭐ Activar Básico · $2/mes</button>
+      <button class="btn-primary" id="cta-plan" onclick="vibrar();activarPlan('basico')">⭐ Activar Básico · $2/mes</button>
       <div class="guarantee">🛡 Cancela cuando quieras · Sin compromisos</div>
       <button class="btn-link" style="display:block;margin:8px auto 0;text-align:center" onclick="vibrar();go('s-profile')">Continuar gratis</button>
     </div>
@@ -1486,9 +1486,27 @@ async function calificar(tipo){
 function selPlan(p){
   ['gratis','basico','pro'].forEach(function(id){const el=document.getElementById('pc-'+id);if(el)el.classList.toggle('sel',id===p);});
   const btn=document.getElementById('cta-plan');
-  if(p==='gratis'){btn.textContent='Continuar gratis';btn.style.background='#6b7280';}
-  else if(p==='basico'){btn.textContent='Activar Basico - $2/mes';btn.style.background='var(--gd)';}
-  else{btn.textContent='Activar Pro - $5/mes';btn.style.background='var(--am)';}
+  if(p==='gratis'){btn.textContent='Continuar gratis';btn.style.background='#6b7280';btn.onclick=function(){vibrar();go('s-profile');};}
+  else if(p==='basico'){btn.textContent='⭐ Activar Básico · $2/mes';btn.style.background='var(--gd)';btn.onclick=function(){vibrar();activarPlan('basico');};}
+  else{btn.textContent='🏆 Activar Pro · $5/mes';btn.style.background='var(--am)';btn.onclick=function(){vibrar();activarPlan('pro');};}
+}
+
+async function activarPlan(plan){
+  if(!currentUser){alert('Debes iniciar sesión primero.');return;}
+  const btn=document.getElementById('cta-plan');
+  const textoOriginal=btn.textContent;
+  btn.textContent='Procesando...';btn.disabled=true;
+  try{
+    const res=await fetch('https://kxmjgjmfrbofzpepamvf.supabase.co/functions/v1/mp-suscripcion',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+sb.auth.session()?.access_token},
+      body:JSON.stringify({plan:plan,user_id:currentUser.id,email:currentUser.email})
+    });
+    const data=await res.json();
+    if(data.url){window.open(data.url,'_blank');}
+    else{alert('Error al procesar el pago. Intenta de nuevo.');}
+  }catch(e){alert('Error de conexión. Intenta de nuevo.');}
+  finally{btn.textContent=textoOriginal;btn.disabled=false;}
 }
 
 // --- PANTALLA COMPRAR ---
