@@ -1301,14 +1301,8 @@ async function cargarPerfil(){
   }
   const cntRes=await sb.from('barajitas').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
   document.getElementById('stat-barajitas').textContent=cntRes.count||0;
-  const valRes=await sb.from('valoraciones').select('tipo').eq('para_user',currentUser.id);
-  if(valRes.data){
-    const pos=valRes.data.filter(function(r){return r.tipo==='pos';}).length;
-    const neg=valRes.data.filter(function(r){return r.tipo==='neg';}).length;
-    const total=pos+neg;
-    document.getElementById('stat-intercambios').textContent=total;
-    if(total>0){document.getElementById('stat-rating').textContent=Math.round((pos/total)*100)+'% 👍';}
-  }
+  const cambiosRes=await sb.from('barajitas').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id).eq('tipo','cambio');
+  document.getElementById('stat-intercambios').textContent=cambiosRes.count||0;
   const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   const bs=bsRes.data||[];
   const g=document.getElementById('mis-barajitas');
@@ -1587,11 +1581,13 @@ function swTab(n){
 }
 
 async function cargarMisBarajitas(){
-  if(!currentUser)return;
   const g=document.getElementById('mis-barajitas');
   if(!g)return;
+  const sessionRes=await sb.auth.getSession();
+  const uid=sessionRes.data.session?.user?.id;
+  if(!uid){g.innerHTML='<div class="empty-state"><div class="es-icon">🔒</div><p>Inicia sesión para ver tus barajitas.</p></div>';return;}
   g.innerHTML='<div class="loading">Cargando...</div>';
-  const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const bsRes=await sb.from('barajitas').select('*').eq('user_id',uid).order('created_at',{ascending:false});
   const bs=bsRes.data||[];
   let ghtml='';
   if(bs.length>0){
