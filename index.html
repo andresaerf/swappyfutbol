@@ -997,7 +997,8 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='s-home'){cargarBarajitas();setTimeout(()=>{iniciarMapa();actualizarMapa();},300);}
-  if(id==='s-profile')cargarPerfil();
+  if(id==='profile')cargarPerfil();
+  if(id==='s-profile'){cargarPerfil();cargarMisBarajitas();}
   if(id==='s-mensajes')cargarConversaciones();
   if(id==='s-album')iniciarAlbum();
   if(id==='s-editar')cargarDatosEditar();
@@ -1582,6 +1583,31 @@ function togPass(){const i=document.getElementById('inp-pass');i.type=i.type==='
 function swTab(n){
   document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===n);});
   document.querySelectorAll('.tc').forEach(function(t,i){t.classList.toggle('active',i===n);});
+  if(n===0)cargarMisBarajitas();
+}
+
+async function cargarMisBarajitas(){
+  if(!currentUser)return;
+  const g=document.getElementById('mis-barajitas');
+  if(!g)return;
+  g.innerHTML='<div class="loading">Cargando...</div>';
+  const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const bs=bsRes.data||[];
+  let ghtml='';
+  if(bs.length>0){
+    bs.forEach(function(b){
+      const flag=b.pais?b.pais.split(' ')[0]:'🌍';
+      const tagC=b.tipo==='cambio'?'tag-swap':b.tipo==='busco'?'tag-want':'tag-sale';
+      const tagT=b.tipo==='cambio'?'🔄 Cambiar':b.tipo==='busco'?'💰 Comprar':'🏷 Vender';
+      ghtml+='<div class="sm-card"><button class="btn-del" onclick="vibrar();eliminarBarajita(\''+b.id+'\')">x</button>'+
+        '<div class="sm-th"><div class="sm-n">#'+(b.numero||'?')+'</div><div class="sm-f">'+flag+'</div></div>'+
+        '<div class="sm-nm">'+b.jugador+'</div><span class="tag '+tagC+'">'+tagT+'</span></div>';
+    });
+  } else {
+    ghtml='<div class="empty-state"><div class="es-icon">🃏</div><p>No tienes barajitas publicadas aún.<br>¡Agrega tu primera barajita!</p></div>';
+  }
+  ghtml+='<div class="add-c" onclick="vibrar();go(\'s-add\')"><span style="font-size:24px">+</span><span>Agregar barajita</span></div>';
+  g.innerHTML=ghtml;
 }
 
 window.addEventListener('load',async function(){
