@@ -1031,7 +1031,7 @@ function renderAlbumBody(){
   let html='<div class="album-section-title">'+selActual.flag+' '+selActual.nombre+'</div>';
   html+='<div class="album-section-sub">Toca las barajitas que tienes repetidas - '+jugadores.length+' barajitas</div>';
   html+='<div class="album-tipo-row"><div class="album-tipo-btn '+(albumTipo==='cambio'?'active-cambio':'')+'" onclick="vibrar();setAlbumTipo(\'cambio\')">Cambiar</div>';
-  html+='<div class="album-tipo-btn '+(albumTipo==='venta'?'active-venta':'')+'" onclick="vibrar();setAlbumTipo(\'venta\')">Venta</div></div>';
+  html+='<div class="album-tipo-btn '+(albumTipo==='venta'?'active-venta':'')+'" onclick="vibrar();setAlbumTipo(\'venta\')">Vender</div></div>';
   html+='<div class="album-counter">Seleccionadas: <span>'+selCnt+'</span> de '+jugadores.length+'</div>';
   html+='<div class="stickers-wrap">';
   jugadores.forEach(function(jug,i){
@@ -1216,7 +1216,7 @@ async function cargarBarajitas(){
   lista.innerHTML=filtrados.map(function(b){
     const dist=miLat&&miLng&&b.perfiles&&b.perfiles.lat&&b.perfiles.lng?calcDistancia(miLat,miLng,b.perfiles.lat,b.perfiles.lng):null;
     const tagClass=b.tipo==='busco'?'tag-want':b.tipo==='cambio'?'tag-swap':'tag-sale';
-    const tagTxt=b.tipo==='busco'?'Busco $'+(b.precio||'?'):b.tipo==='cambio'?'Para cambiar':'En venta $'+b.precio;
+    const tagTxt=b.tipo==='busco'?'🔍 Busco por $'+(b.precio||'?'):b.tipo==='cambio'?'Para cambiar':'En venta $'+b.precio;
     const flag=b.pais?b.pais.split(' ')[0]:'🌍';
     const pais=b.pais?b.pais.split(' ').slice(1).join(' '):'?';
     const uid=b.user_id;const uname=b.perfiles?b.perfiles.username:'usuario';
@@ -1309,17 +1309,21 @@ async function cargarPerfil(){
     if(total>0){document.getElementById('stat-rating').textContent=Math.round((pos/total)*100)+'% 👍';}
   }
   const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-  const bs=bsRes.data;const g=document.getElementById('mis-barajitas');
+  const bs=bsRes.data||[];
+  const g=document.getElementById('mis-barajitas');
+  if(!g)return;
   let ghtml='';
   if(bs&&bs.length>0){
     bs.forEach(function(b){
       const flag=b.pais?b.pais.split(' ')[0]:'🌍';
       const tagC=b.tipo==='cambio'?'tag-swap':b.tipo==='busco'?'tag-want':'tag-sale';
-      const tagT=b.tipo==='cambio'?'🔄':b.tipo==='busco'?'🔍':'🏷';
+      const tagT=b.tipo==='cambio'?'🔄 Cambiar':b.tipo==='busco'?'💰 Comprar':'🏷 Vender';
       ghtml+='<div class="sm-card"><button class="btn-del" onclick="vibrar();eliminarBarajita(\''+b.id+'\')">x</button>'+
         '<div class="sm-th"><div class="sm-n">#'+(b.numero||'?')+'</div><div class="sm-f">'+flag+'</div></div>'+
         '<div class="sm-nm">'+b.jugador+'</div><span class="tag '+tagC+'">'+tagT+'</span></div>';
     });
+  } else {
+    ghtml='<div class="empty-state"><div class="es-icon">🃏</div><p>No tienes barajitas publicadas aún.<br>¡Agrega tu primera barajita!</p></div>';
   }
   ghtml+='<div class="add-c" onclick="vibrar();go(\'s-add\')"><span style="font-size:24px">+</span><span>Agregar barajita</span></div>';
   g.innerHTML=ghtml;
