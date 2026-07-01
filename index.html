@@ -1319,8 +1319,11 @@ async function eliminarBarajita(id){
 }
 
 async function cargarPerfil(){
-  if(!currentUser)return;
-  const res=await sb.from('perfiles').select('*').eq('id',currentUser.id).single();
+  const sessionRes=await sb.auth.getSession();
+  const uid=sessionRes.data.session?.user?.id;
+  if(!uid)return;
+  if(!currentUser)currentUser=sessionRes.data.session.user;
+  const res=await sb.from('perfiles').select('*').eq('id',uid).single();
   const data=res.data;
   if(data){
     document.getElementById('profile-av-txt').textContent=data.nombre?data.nombre[0].toUpperCase():'?';
@@ -1333,7 +1336,7 @@ async function cargarPerfil(){
     if(data.avatar_url)mostrarAvatar(data.avatar_url);
     if(data.ciudad)document.getElementById('profile-loc').textContent=data.ciudad;
   }
-  const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const bsRes=await sb.from('barajitas').select('*').eq('user_id',uid).order('created_at',{ascending:false});
   const bs=bsRes.data||[];
   document.getElementById('stat-barajitas').textContent=bs.length;
   document.getElementById('stat-intercambios').textContent=bs.filter(function(b){return b.tipo==='cambio';}).length;
