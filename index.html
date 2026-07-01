@@ -1328,10 +1328,12 @@ async function cargarPerfil(){
   if(data){
     document.getElementById('profile-av-txt').textContent=data.nombre?data.nombre[0].toUpperCase():'?';
     const nameEl=document.getElementById('profile-name');
-    nameEl.innerHTML=data.nombre||'Sin nombre';
     const badge=document.getElementById('mvp-badge');
-    if(data.plan==='pro'){badge.style.display='inline-flex';}else{badge.style.display='none';}
-    nameEl.appendChild(badge);
+    nameEl.innerHTML=data.nombre||'Sin nombre';
+    if(badge){
+      if(data.plan==='pro'){badge.style.display='inline-flex';}else{badge.style.display='none';}
+      nameEl.appendChild(badge);
+    }
     document.getElementById('profile-email').textContent='@'+(data.username||currentUser.email);
     if(data.avatar_url)mostrarAvatar(data.avatar_url);
     if(data.ciudad)document.getElementById('profile-loc').textContent=data.ciudad;
