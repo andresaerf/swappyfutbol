@@ -361,7 +361,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
     <div id="fee-box" style="display:none">
       <div class="fee-notice">
         <div class="fi">💡</div>
-        <div class="ft">Publicar en venta o búsqueda tiene un costo de <strong>$0.20</strong> por barajita. Los intercambios siempre son gratis. Este pequeño fee nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+        <div class="ft">Publicar en venta o compra tiene una comisión del <strong>10%</strong> sobre el precio que indiques (mínimo $0.20). Los intercambios siempre son gratis. Esta comisión nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
       </div>
     </div>
     <div class="field"><label>Álbum</label>
@@ -429,8 +429,8 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
       </div>
     </div>
     <div class="field"><label>Jugador</label><input type="text" id="a-jugador" placeholder="Ej: Lionel Messi" oninput="updPrev()" /></div>
-    <div class="field" id="precio-field" style="display:none"><label id="precio-label">Precio ($)</label><input type="number" id="a-precio" placeholder="0.00" step="0.50" min="0" /></div>
-    <div class="field" id="oferta-field" style="display:none"><label>Mi oferta ($)</label><input type="number" id="a-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" /></div>
+    <div class="field" id="precio-field" style="display:none"><label id="precio-label">Precio ($)</label><input type="number" id="a-precio" placeholder="0.00" step="0.50" min="0" oninput="updPrev()" /></div>
+    <div class="field" id="oferta-field" style="display:none"><label>Mi oferta ($)</label><input type="number" id="a-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" oninput="updPrev()" /></div>
     <div class="field" id="qty-field"><label>Cantidad</label>
       <div class="qty-wrap">
         <button class="qty-btn" onclick="vibrar();chgQty(-1)">−</button>
@@ -686,11 +686,11 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
     </div>
     <div class="info-card">
       <div class="info-card-title">🏷 ¿Cómo vendo una barajita?</div>
-      <div class="info-card-text">Marca tu barajita como "Vender" y ponle un precio. Tiene un costo de $0.20 por publicación para mantener la plataforma. Los compradores interesados te contactarán por chat y coordinan el pago entre ustedes.</div>
+      <div class="info-card-text">Marca tu barajita como "Vender" y ponle un precio. Tiene una comisión del 10% sobre ese precio (mínimo $0.20) para mantener la plataforma. Los compradores interesados te contactarán por chat y coordinan el pago entre ustedes.</div>
     </div>
     <div class="info-card">
       <div class="info-card-title">🔍 ¿Qué es "Busco esta barajita"?</div>
-      <div class="info-card-text">Si hay una barajita que no encuentras, publícala como "Busco" con el precio que ofreces. Los coleccionistas que la tengan verán tu oferta en el mapa y podrán contactarte. Cuesta $0.20 publicar una búsqueda.</div>
+      <div class="info-card-text">Si hay una barajita que no encuentras, publícala como "Busco" con el precio que ofreces. Los coleccionistas que la tengan verán tu oferta en el mapa y podrán contactarte. Tiene una comisión del 10% sobre lo que ofrezcas (mínimo $0.20).</div>
     </div>
     <div class="info-card">
       <div class="info-card-title">⚡ ¿Qué es el Álbum Rápido?</div>
@@ -882,10 +882,10 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
         </div>
       </div>
       <div class="field"><label>Jugador</label><input type="text" id="c-jugador" placeholder="Ej: Lionel Messi" oninput="updPrevComprar()" /></div>
-      <div class="field"><label>Mi oferta ($)</label><input type="number" id="c-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" /></div>
+      <div class="field"><label>Mi oferta ($)</label><input type="number" id="c-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" oninput="updPrevComprar()" /></div>
       <div class="fee-notice">
         <div class="fi">💡</div>
-        <div class="ft">Publicar una búsqueda tiene un costo de <strong>$0.20</strong> por barajita. Esto nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+        <div class="ft">Publicar una compra tiene una comisión del <strong>10%</strong> sobre lo que ofrezcas (mínimo $0.20). Esto nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
       </div>
       <div class="field"><label>Vista previa</label>
         <div class="preview-card">
@@ -895,7 +895,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
           <span class="tag tag-want" style="margin-top:6px;display:inline-block">🔍 Busco</span></div>
         </div>
       </div>
-      <button class="btn-primary" style="background:#4F46E5" onclick="vibrar();publicarBusqueda()">🔍 Publicar búsqueda ($0.20)</button>
+      <button class="btn-primary" style="background:#4F46E5" onclick="vibrar();publicarBusqueda()" id="btn-publicar-comprar">🔍 Publicar compra ($0.20 mín.)</button>
     </div>
     <div class="sec-lbl">🏷 En venta cerca de ti</div>
     <div id="lista-comprar"><div class="loading">Cargando...</div></div>
@@ -1233,6 +1233,19 @@ function filtrarTodo(q){cargarBarajitas();if(mapa&&q.length>=2)cargarMarcadoresB
 function selFilter(el,tipo){document.querySelectorAll('.filter-pill').forEach(function(p){p.classList.remove('active');});el.classList.add('active');filtroActual=tipo;cargarBarajitas();}
 
 let tipoActual='cambio',albumActualAdd='Mundial 2026',qtyActual=1;
+function calcComision(precio){
+  const c=(parseFloat(precio)||0)*0.10;
+  return Math.max(c,0.20);
+}
+function actualizarBotonPublicar(){
+  const btn=document.getElementById('btn-publicar');
+  if(!btn)return;
+  if(tipoActual==='cambio'){btn.textContent='Publicar para cambio (gratis)';return;}
+  const campoId=tipoActual==='venta'?'a-precio':'a-oferta';
+  const campo=document.getElementById(campoId);
+  const com=calcComision(campo?campo.value:0);
+  btn.textContent=(tipoActual==='busco'?'Publicar compra ($':'Publicar en venta ($')+com.toFixed(2)+')';
+}
 function selTipo(t){
   tipoActual=t;
   ['cambio','venta','busco'].forEach(function(x){document.getElementById('t-'+x).className='type-btn';});
@@ -1244,8 +1257,7 @@ function selTipo(t){
   if(t==='cambio'){tag.textContent='Para cambiar';tag.className='tag tag-swap';}
   else if(t==='venta'){tag.textContent='En venta';tag.className='tag tag-sale';}
   else{tag.textContent='Busco';tag.className='tag tag-want';}
-  const btn=document.getElementById('btn-publicar');
-  btn.textContent=t==='busco'?'Publicar busqueda ($0.20)':t==='venta'?'Publicar en venta ($0.20)':'Publicar para cambio (gratis)';
+  actualizarBotonPublicar();
 }
 function selAlbum(el){document.querySelectorAll('.album-pill').forEach(function(p){p.classList.remove('active');});el.classList.add('active');albumActualAdd=el.textContent;updPrev();}
 function chgQty(d){qtyActual=Math.max(1,Math.min(99,qtyActual+d));document.getElementById('qty-val').textContent=qtyActual;}
@@ -1257,6 +1269,7 @@ function updPrev(){
   if(pais){const pts=pais.split(' ');document.getElementById('pv-flag').textContent=pts[0];document.getElementById('pv-team').textContent=pts.slice(1).join(' ')+' - '+albumActualAdd;}
   else{document.getElementById('pv-flag').textContent='?';document.getElementById('pv-team').textContent='Pais - '+albumActualAdd;}
   document.getElementById('pv-jug').textContent=jug||'Nombre del jugador';
+  actualizarBotonPublicar();
 }
 
 async function publicarBarajita(){
@@ -1270,12 +1283,33 @@ async function publicarBarajita(){
   let precio=null;
   if(tipoActual==='venta')precio=parseFloat(document.getElementById('a-precio').value)||0;
   if(tipoActual==='busco')precio=parseFloat(document.getElementById('a-oferta').value)||0;
-  const res=await sb.from('barajitas').insert({user_id:currentUser.id,jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualAdd,tipo:tipoActual,precio:precio,cantidad:qtyActual,lat:miLat,lng:miLng});
-  if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
-  ok.textContent='Barajita publicada exitosamente!';ok.style.display='block';
-  document.getElementById('a-jugador').value='';document.getElementById('a-num').value='';document.getElementById('a-pais').value='';
-  qtyActual=1;document.getElementById('qty-val').textContent='1';updPrev();
-  setTimeout(function(){ok.style.display='none';go('s-home');},1500);
+  const datosBarajita={jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualAdd,tipo:tipoActual,precio:precio,cantidad:qtyActual,lat:miLat,lng:miLng};
+  if(tipoActual==='cambio'){
+    const res=await sb.from('barajitas').insert(Object.assign({user_id:currentUser.id},datosBarajita));
+    if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
+    ok.textContent='Barajita publicada exitosamente!';ok.style.display='block';
+    document.getElementById('a-jugador').value='';document.getElementById('a-num').value='';document.getElementById('a-pais').value='';
+    qtyActual=1;document.getElementById('qty-val').textContent='1';updPrev();
+    setTimeout(function(){ok.style.display='none';go('s-home');},1500);
+  }else{
+    try{
+      ok.textContent='Redirigiendo al pago de la comisión ($'+calcComision(precio).toFixed(2)+')...';ok.style.display='block';
+      await iniciarPagoPublicacion(datosBarajita);
+    }catch(e){ok.style.display='none';err.textContent='Error al iniciar el pago: '+e.message;err.style.display='block';}
+  }
+}
+
+async function iniciarPagoPublicacion(datosBarajita){
+  const sessionRes=await sb.auth.getSession();
+  const token=sessionRes.data.session?.access_token;
+  const res=await fetch('https://kxmjgjmfrbofzpepamvf.supabase.co/functions/v1/mp-pago-publicacion',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWpnam1mcmJvZnpwZXBhbXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMTc1NzQsImV4cCI6MjA5Nzg5MzU3NH0.7jAuOpciEG6NkJDhYMvWEk0YMt9nLolZleuHVLYdZHE'},
+    body:JSON.stringify({user_id:currentUser.id,barajita:datosBarajita})
+  });
+  const data=await res.json();
+  if(data.url){window.location.href=data.url;}
+  else{throw new Error(data.error||'No se pudo iniciar el pago.');}
 }
 
 async function eliminarBarajita(id){
@@ -1299,12 +1333,10 @@ async function cargarPerfil(){
     if(data.avatar_url)mostrarAvatar(data.avatar_url);
     if(data.ciudad)document.getElementById('profile-loc').textContent=data.ciudad;
   }
-  const cntRes=await sb.from('barajitas').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
-  document.getElementById('stat-barajitas').textContent=cntRes.count||0;
-  const cambiosRes=await sb.from('barajitas').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id).eq('tipo','cambio');
-  document.getElementById('stat-intercambios').textContent=cambiosRes.count||0;
   const bsRes=await sb.from('barajitas').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   const bs=bsRes.data||[];
+  document.getElementById('stat-barajitas').textContent=bs.length;
+  document.getElementById('stat-intercambios').textContent=bs.filter(function(b){return b.tipo==='cambio';}).length;
   const g=document.getElementById('mis-barajitas');
   if(!g)return;
   let ghtml='';
@@ -1524,6 +1556,8 @@ function updPrevComprar(){
   if(pais){const pts=pais.split(' ');document.getElementById('cpv-flag').textContent=pts[0];document.getElementById('cpv-team').textContent=pts.slice(1).join(' ')+' - '+albumActualComprar;}
   else{document.getElementById('cpv-flag').textContent='?';document.getElementById('cpv-team').textContent='País - '+albumActualComprar;}
   document.getElementById('cpv-jug').textContent=jug||'Nombre del jugador';
+  const btn=document.getElementById('btn-publicar-comprar');
+  if(btn){const com=calcComision(document.getElementById('c-oferta').value);btn.textContent='🔍 Publicar compra ($'+com.toFixed(2)+')';}
 }
 async function publicarBusqueda(){
   const err=document.getElementById('msg-comprar-error');const ok=document.getElementById('msg-comprar-ok');
@@ -1534,12 +1568,11 @@ async function publicarBusqueda(){
   if(!jugador||!pais){err.textContent='Completa el jugador y el país.';err.style.display='block';return;}
   const numero=document.getElementById('c-num').value;
   const precio=parseFloat(document.getElementById('c-oferta').value)||0;
-  const res=await sb.from('barajitas').insert({user_id:currentUser.id,jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualComprar,tipo:'busco',precio:precio,cantidad:1,lat:miLat,lng:miLng});
-  if(res.error){err.textContent='Error: '+res.error.message;err.style.display='block';return;}
-  ok.textContent='¡Búsqueda publicada! Los coleccionistas te contactarán pronto.';ok.style.display='block';
-  document.getElementById('c-jugador').value='';document.getElementById('c-num').value='';document.getElementById('c-pais').value='';document.getElementById('c-oferta').value='';
-  updPrevComprar();setTimeout(function(){ok.style.display='none';},3000);
-  cargarListaComprar();
+  const datosBarajita={jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualComprar,tipo:'busco',precio:precio,cantidad:1,lat:miLat,lng:miLng};
+  try{
+    ok.textContent='Redirigiendo al pago de la comisión ($'+calcComision(precio).toFixed(2)+')...';ok.style.display='block';
+    await iniciarPagoPublicacion(datosBarajita);
+  }catch(e){ok.style.display='none';err.textContent='Error al iniciar el pago: '+e.message;err.style.display='block';}
 }
 async function cargarListaComprar(){
   const lista=document.getElementById('lista-comprar');
