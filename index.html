@@ -361,7 +361,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
     <div id="fee-box" style="display:none">
       <div class="fee-notice">
         <div class="fi">💡</div>
-        <div class="ft">Publicar en venta o compra tiene una comisión del <strong>10%</strong> sobre el precio que indiques (mínimo $0.20). Los intercambios siempre son gratis. Esta comisión nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+        <div class="ft">Publicar en venta o compra cuesta <strong>Swapins</strong> (1 Swapin = $0.10, mínimo 2). Los intercambios siempre son gratis. <a onclick="vibrar();go('s-swapins')" style="color:var(--gd);font-weight:800;cursor:pointer">Recargar Swapins →</a></div>
       </div>
     </div>
     <div class="field"><label>Álbum</label>
@@ -536,6 +536,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
     <div class="ph-handle" id="profile-email"></div>
     <div class="ph-loc" id="profile-loc">📍 Ubicación</div>
     <div class="plan-strip" onclick="vibrar();go('s-planes')">👑 Plan Gratis · Actualizar</div>
+    <div class="plan-strip" id="swapins-strip" onclick="vibrar();go('s-swapins')" style="background:rgba(255,255,255,0.25);margin-top:6px">🪙 <span id="swapins-saldo">0</span> Swapins · Recargar</div>
     <div class="stats-row">
       <div class="stat-box"><div class="stat-n" id="stat-barajitas">0</div><div class="stat-l">Barajitas</div></div>
       <div class="stat-box"><div class="stat-n" id="stat-intercambios">0</div><div class="stat-l">Cambios</div></div>
@@ -826,6 +827,38 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
   </div>
 </div>
 
+<!-- PANTALLA RECARGAR SWAPINS -->
+<div class="screen" id="s-swapins">
+  <div class="topbar">
+    <button class="tb-back" onclick="vibrar();go('s-profile')">←</button>
+    <div class="tb-title">🪙 Recargar Swapins</div>
+  </div>
+  <div class="scroll">
+    <div class="plan-hero">
+      <div class="crown-wrap">🪙</div>
+      <div style="font-size:18px;font-weight:800;color:#fff">Tienes <span id="swapins-saldo-2">0</span> Swapins</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:6px;font-weight:600">1 Swapin = $0.10 USD · Úsalos para Vender y Comprar</div>
+    </div>
+    <div class="plan-cards-wrap">
+      <div class="plan-card sel" id="sw-20" onclick="vibrar();selSwapinPack(20)">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">🪙 20 Swapins</div><div style="text-align:right"><div class="pp">$2.00</div></div></div>
+      </div>
+      <div class="plan-card" id="sw-50" onclick="vibrar();selSwapinPack(50)">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">🪙 50 Swapins <span class="pbadge">Más popular</span></div><div style="text-align:right"><div class="pp">$5.00</div></div></div>
+      </div>
+      <div class="plan-card" id="sw-100" onclick="vibrar();selSwapinPack(100)">
+        <div class="ph2"><div class="p-radio"><div class="p-radio-dot"></div></div><div class="pn">🪙 100 Swapins</div><div style="text-align:right"><div class="pp">$10.00</div></div></div>
+      </div>
+    </div>
+    <div class="cta-section">
+      <div id="msg-swapins-error" style="display:none" class="fee-notice"></div>
+      <button class="btn-primary" id="cta-swapin" onclick="vibrar();recargarSwapins()">Recargar 20 Swapins · $2.00</button>
+      <div class="guarantee">🔒 Pago seguro con MercadoPago</div>
+    </div>
+    <div style="padding-bottom:20px"></div>
+  </div>
+</div>
+
 <!-- PANTALLA COMPRAR -->
 <div class="screen" id="s-comprar">
   <div class="topbar">
@@ -885,7 +918,7 @@ body{background:var(--bg);min-height:100vh;display:flex;justify-content:center;a
       <div class="field"><label>Mi oferta ($)</label><input type="number" id="c-oferta" placeholder="¿Cuánto ofreces?" step="0.50" min="0" oninput="updPrevComprar()" /></div>
       <div class="fee-notice">
         <div class="fi">💡</div>
-        <div class="ft">Publicar una compra tiene una comisión del <strong>10%</strong> sobre lo que ofrezcas (mínimo $0.20). Esto nos ayuda a mantener SwappyFutbol funcionando para todos.</div>
+        <div class="ft">Publicar una compra cuesta <strong>Swapins</strong> (1 Swapin = $0.10, mínimo 2). <a onclick="vibrar();go('s-swapins')" style="color:#4F46E5;font-weight:800;cursor:pointer">Recargar Swapins →</a></div>
       </div>
       <div class="field"><label>Vista previa</label>
         <div class="preview-card">
@@ -999,6 +1032,7 @@ function go(id){
   if(id==='s-home'){cargarBarajitas();setTimeout(()=>{iniciarMapa();actualizarMapa();},300);}
   if(id==='profile')cargarPerfil();
   if(id==='s-profile'){cargarPerfil();cargarMisBarajitas();}
+  if(id==='s-swapins')cargarSaldoSwapins();
   if(id==='s-mensajes')cargarConversaciones();
   if(id==='s-album')iniciarAlbum();
   if(id==='s-editar')cargarDatosEditar();
@@ -1233,9 +1267,9 @@ function filtrarTodo(q){cargarBarajitas();if(mapa&&q.length>=2)cargarMarcadoresB
 function selFilter(el,tipo){document.querySelectorAll('.filter-pill').forEach(function(p){p.classList.remove('active');});el.classList.add('active');filtroActual=tipo;cargarBarajitas();}
 
 let tipoActual='cambio',albumActualAdd='Mundial 2026',qtyActual=1;
-function calcComision(precio){
-  const c=(parseFloat(precio)||0)*0.10;
-  return Math.max(c,0.20);
+function calcCostoSwapins(precio){
+  const comisionUsd=Math.max((parseFloat(precio)||0)*0.10,0.20);
+  return Math.ceil(comisionUsd/0.10);
 }
 function actualizarBotonPublicar(){
   const btn=document.getElementById('btn-publicar');
@@ -1243,8 +1277,8 @@ function actualizarBotonPublicar(){
   if(tipoActual==='cambio'){btn.textContent='Publicar para cambio (gratis)';return;}
   const campoId=tipoActual==='venta'?'a-precio':'a-oferta';
   const campo=document.getElementById(campoId);
-  const com=calcComision(campo?campo.value:0);
-  btn.textContent=(tipoActual==='busco'?'Publicar compra ($':'Publicar en venta ($')+com.toFixed(2)+')';
+  const costo=calcCostoSwapins(campo?campo.value:0);
+  btn.textContent=(tipoActual==='busco'?'Publicar compra (':'Publicar en venta (')+costo+' Swapins)';
 }
 function selTipo(t){
   tipoActual=t;
@@ -1292,24 +1326,33 @@ async function publicarBarajita(){
     qtyActual=1;document.getElementById('qty-val').textContent='1';updPrev();
     setTimeout(function(){ok.style.display='none';go('s-home');},1500);
   }else{
+    const costo=calcCostoSwapins(precio);
     try{
-      ok.textContent='Redirigiendo al pago de la comisión ($'+calcComision(precio).toFixed(2)+')...';ok.style.display='block';
-      await iniciarPagoPublicacion(datosBarajita);
-    }catch(e){ok.style.display='none';err.textContent='Error al iniciar el pago: '+e.message;err.style.display='block';}
+      await publicarConSwapins(datosBarajita,costo);
+      ok.textContent='Publicado! Se descontaron '+costo+' Swapins.';ok.style.display='block';
+      document.getElementById('a-jugador').value='';document.getElementById('a-num').value='';document.getElementById('a-pais').value='';
+      qtyActual=1;document.getElementById('qty-val').textContent='1';updPrev();
+      setTimeout(function(){ok.style.display='none';go('s-home');},1500);
+    }catch(e){err.textContent=e.message;err.style.display='block';}
   }
 }
 
-async function iniciarPagoPublicacion(datosBarajita){
-  const sessionRes=await sb.auth.getSession();
-  const token=sessionRes.data.session?.access_token;
-  const res=await fetch('https://kxmjgjmfrbofzpepamvf.supabase.co/functions/v1/mp-pago-publicacion',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWpnam1mcmJvZnpwZXBhbXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMTc1NzQsImV4cCI6MjA5Nzg5MzU3NH0.7jAuOpciEG6NkJDhYMvWEk0YMt9nLolZleuHVLYdZHE'},
-    body:JSON.stringify({user_id:currentUser.id,barajita:datosBarajita})
+async function publicarConSwapins(datosBarajita,costoSwapins){
+  const res=await sb.rpc('publicar_con_swapins',{
+    p_jugador:datosBarajita.jugador,
+    p_numero:datosBarajita.numero,
+    p_pais:datosBarajita.pais,
+    p_album:datosBarajita.album,
+    p_tipo:datosBarajita.tipo,
+    p_precio:datosBarajita.precio,
+    p_cantidad:datosBarajita.cantidad,
+    p_lat:datosBarajita.lat,
+    p_lng:datosBarajita.lng,
+    p_costo_swapins:costoSwapins
   });
-  const data=await res.json();
-  if(data.url){window.location.href=data.url;}
-  else{throw new Error(data.error||'No se pudo iniciar el pago.');}
+  if(res.error)throw new Error(res.error.message);
+  if(!res.data.ok)throw new Error(res.data.error+(res.data.saldo!==undefined?' (tienes '+res.data.saldo+' Swapins)':''));
+  return res.data;
 }
 
 async function eliminarBarajita(id){
@@ -1337,6 +1380,7 @@ async function cargarPerfil(){
     document.getElementById('profile-email').textContent='@'+(data.username||currentUser.email);
     if(data.avatar_url)mostrarAvatar(data.avatar_url);
     if(data.ciudad)document.getElementById('profile-loc').textContent=data.ciudad;
+    document.getElementById('swapins-saldo').textContent=data.swapins||0;
   }
   const bsRes=await sb.from('barajitas').select('*').eq('user_id',uid).order('created_at',{ascending:false});
   const bs=bsRes.data||[];
@@ -1547,6 +1591,42 @@ async function activarPlan(plan){
   finally{btn.textContent=textoOriginal;btn.disabled=false;}
 }
 
+// --- PANTALLA SWAPINS ---
+let swapinPackActual=20;
+const swapinPacks={20:'$2.00',50:'$5.00',100:'$10.00'};
+function selSwapinPack(cantidad){
+  swapinPackActual=cantidad;
+  [20,50,100].forEach(function(n){const el=document.getElementById('sw-'+n);if(el)el.classList.toggle('sel',n===cantidad);});
+  document.getElementById('cta-swapin').textContent='Recargar '+cantidad+' Swapins · '+swapinPacks[cantidad];
+}
+async function cargarSaldoSwapins(){
+  if(!currentUser)return;
+  const res=await sb.from('perfiles').select('swapins').eq('id',currentUser.id).single();
+  const saldo=(res.data&&res.data.swapins)||0;
+  document.getElementById('swapins-saldo').textContent=saldo;
+  document.getElementById('swapins-saldo-2').textContent=saldo;
+}
+async function recargarSwapins(){
+  if(!currentUser){alert('Debes iniciar sesión primero.');return;}
+  const err=document.getElementById('msg-swapins-error');err.style.display='none';
+  const btn=document.getElementById('cta-swapin');
+  const textoOriginal=btn.textContent;
+  btn.textContent='Procesando...';btn.disabled=true;
+  try{
+    const sessionRes=await sb.auth.getSession();
+    const token=sessionRes.data.session?.access_token;
+    const res=await fetch('https://kxmjgjmfrbofzpepamvf.supabase.co/functions/v1/mp-suscripcion',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWpnam1mcmJvZnpwZXBhbXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMTc1NzQsImV4cCI6MjA5Nzg5MzU3NH0.7jAuOpciEG6NkJDhYMvWEk0YMt9nLolZleuHVLYdZHE'},
+      body:JSON.stringify({plan:'recarga',cantidad_swapins:swapinPackActual,user_id:currentUser.id,email:currentUser.email})
+    });
+    const data=await res.json();
+    if(data.url){window.location.href=data.url;}
+    else{err.textContent=data.error||'No se pudo iniciar el pago.';err.style.display='block';}
+  }catch(e){err.textContent='Error de conexión: '+e.message;err.style.display='block';}
+  finally{btn.textContent=textoOriginal;btn.disabled=false;}
+}
+
 // --- PANTALLA COMPRAR ---
 let albumActualComprar='Mundial 2026';
 function selAlbumComprar(el){
@@ -1562,7 +1642,7 @@ function updPrevComprar(){
   else{document.getElementById('cpv-flag').textContent='?';document.getElementById('cpv-team').textContent='País - '+albumActualComprar;}
   document.getElementById('cpv-jug').textContent=jug||'Nombre del jugador';
   const btn=document.getElementById('btn-publicar-comprar');
-  if(btn){const com=calcComision(document.getElementById('c-oferta').value);btn.textContent='🔍 Publicar compra ($'+com.toFixed(2)+')';}
+  if(btn){const costo=calcCostoSwapins(document.getElementById('c-oferta').value);btn.textContent='🔍 Publicar compra ('+costo+' Swapins)';}
 }
 async function publicarBusqueda(){
   const err=document.getElementById('msg-comprar-error');const ok=document.getElementById('msg-comprar-ok');
@@ -1574,10 +1654,14 @@ async function publicarBusqueda(){
   const numero=document.getElementById('c-num').value;
   const precio=parseFloat(document.getElementById('c-oferta').value)||0;
   const datosBarajita={jugador:jugador,numero:numero?parseInt(numero):null,pais:pais,album:albumActualComprar,tipo:'busco',precio:precio,cantidad:1,lat:miLat,lng:miLng};
+  const costo=calcCostoSwapins(precio);
   try{
-    ok.textContent='Redirigiendo al pago de la comisión ($'+calcComision(precio).toFixed(2)+')...';ok.style.display='block';
-    await iniciarPagoPublicacion(datosBarajita);
-  }catch(e){ok.style.display='none';err.textContent='Error al iniciar el pago: '+e.message;err.style.display='block';}
+    await publicarConSwapins(datosBarajita,costo);
+    ok.textContent='¡Publicado! Se descontaron '+costo+' Swapins.';ok.style.display='block';
+    document.getElementById('c-jugador').value='';document.getElementById('c-num').value='';document.getElementById('c-pais').value='';document.getElementById('c-oferta').value='';
+    updPrevComprar();setTimeout(function(){ok.style.display='none';},3000);
+    cargarListaComprar();
+  }catch(e){err.textContent=e.message;err.style.display='block';}
 }
 async function cargarListaComprar(){
   const lista=document.getElementById('lista-comprar');
